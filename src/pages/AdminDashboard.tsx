@@ -8,7 +8,6 @@ import {
   Search,
   MessageSquare,
   Activity,
-  Key,
 } from "lucide-react";
 import { db } from "../lib/firebase";
 import {
@@ -27,7 +26,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
-import { ApiKeysManager } from "../components/ApiKeysManager";
+
 import { Skeleton } from "../components/ui/Skeleton";
 
 interface UserData {
@@ -69,7 +68,7 @@ export default function AdminDashboard() {
   const { userData } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<
-    "dashboard" | "users" | "reports" | "feedback" | "apikeys"
+    "dashboard" | "users" | "reports" | "feedback"
   >("dashboard");
   const [users, setUsers] = useState<UserData[]>([]);
   const [reports, setReports] = useState<FieldReport[]>([]);
@@ -407,22 +406,10 @@ export default function AdminDashboard() {
             User Feedback
           </div>
         </button>
-        <button
-          onClick={() => setActiveTab("apikeys")}
-          className={`whitespace-nowrap shrink-0 px-4 sm:px-6 py-2 rounded-lg font-medium transition-all ${
-            activeTab === "apikeys"
-              ? "bg-accent-primary/20 text-accent-primary border border-accent-primary/30"
-              : "text-slate-400 hover:text-white hover:bg-white/5"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Key className="w-4 h-4" />
-            API Keys
-          </div>
-        </button>
+
       </div>
 
-      {activeTab !== "dashboard" && activeTab !== "apikeys" && (
+      {activeTab !== "dashboard" && (
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="w-5 h-5 text-slate-500" />
@@ -840,8 +827,6 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
-      ) : activeTab === "apikeys" ? (
-        <ApiKeysManager />
       ) : null}
     </div>
   );

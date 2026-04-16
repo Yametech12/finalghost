@@ -1,5 +1,5 @@
-export const DEFAULT_MODEL = "openrouter/auto";
-// Vision support enabled with OpenRouter\nexport const VISION_MODEL = "openrouter/auto";
+export const DEFAULT_MODEL = "anthropic/claude-3.5-sonnet";
+// Vision support enabled with OpenRouter\nexport const VISION_MODEL = "openai/gpt-4o";
 
 export async function chatCompletion(
   messages: any[],

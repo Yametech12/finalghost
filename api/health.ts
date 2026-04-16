@@ -9,6 +9,7 @@ export default async function handler(req: any, res: any) {
       hasFirebaseKey: !!process.env.VITE_FIREBASE_API_KEY || !!process.env.FIREBASE_API_KEY,
       hasOpenRouterKey: !!process.env.OPENROUTER_API_KEY,
       aiProvider: process.env.AI_PROVIDER || 'openrouter',
+      defaultModel: 'anthropic/claude-3.5-sonnet',
       timestamp: new Date().toISOString(),
       version: '1.0.0'
     };

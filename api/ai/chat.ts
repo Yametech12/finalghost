@@ -19,7 +19,7 @@ async function chatWithOpenRouter(body: ChatRequest, apiKeyVal: string, retries 
   const url = API_URL;
 
   const requestBody = {
-    model: body.model || "openrouter/auto",
+    model: body.model || "anthropic/claude-3.5-sonnet",
     messages: body.messages || [],
     temperature: body.temperature || 0.7,
     top_p: body.top_p || 1.0,
