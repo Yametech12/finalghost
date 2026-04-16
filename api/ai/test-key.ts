@@ -19,7 +19,7 @@ export default async function handler(req: any, res: any) {
 
     // Test OpenRouter key with simple request
     const testBody = {
-      model: "anthropic/claude-3.5-sonnet",
+      model: "microsoft/wizardlm-2-8x22b",
       messages: [{ role: "user", content: "Say 'Hello'" }],
       max_tokens: 10
     };

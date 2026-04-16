@@ -19,13 +19,20 @@ async function chatWithOpenRouter(body: ChatRequest, apiKeyVal: string, retries 
   const url = API_URL;
 
   const requestBody = {
-    model: body.model || "anthropic/claude-3.5-sonnet",
+    model: body.model || "microsoft/wizardlm-2-8x22b",
     messages: body.messages || [],
     temperature: body.temperature || 0.7,
     top_p: body.top_p || 1.0,
     max_tokens: body.max_tokens || 4096,
     stream: body.stream || false
   };
+
+  console.log('OpenRouter Request:', {
+    url,
+    model: requestBody.model,
+    messageCount: requestBody.messages?.length || 0,
+    hasApiKey: !!apiKeyVal
+  });
 
   const headers = {
     'Authorization': `Bearer ${apiKeyVal}`,
@@ -47,6 +54,8 @@ async function chatWithOpenRouter(body: ChatRequest, apiKeyVal: string, retries 
       }
 
       const errorData = await response.json().catch(() => ({}));
+      console.error(`OpenRouter API Error (${response.status}):`, errorData);
+
       if (response.status === 429 && attempt < retries) {
         const wait = delay * Math.pow(2, attempt - 1);
         console.warn(`Rate limit (429), waiting ${wait}ms before retry ${attempt}/${retries}`);
@@ -54,7 +63,7 @@ async function chatWithOpenRouter(body: ChatRequest, apiKeyVal: string, retries 
         continue;
       }
 
-      const errorMsg = errorData.error?.message || response.statusText || 'Unknown error';
+      const errorMsg = errorData.error?.message || errorData.message || response.statusText || 'Unknown error';
       throw new Error(`HTTP ${response.status}: ${errorMsg}`);
     } catch (error: unknown) {
       if (attempt === retries) throw error;

@@ -1,5 +1,6 @@
-export const DEFAULT_MODEL = "anthropic/claude-3.5-sonnet";
-// Vision support enabled with OpenRouter\nexport const VISION_MODEL = "openai/gpt-4o";
+export const DEFAULT_MODEL = "microsoft/wizardlm-2-8x22b";
+// Vision support enabled with OpenRouter
+export const VISION_MODEL = "openai/gpt-4o-mini";
 
 export async function chatCompletion(
   messages: any[],
@@ -72,12 +73,10 @@ export async function chatCompletion(
                 const data = JSON.parse(line.slice(6));
                 yield data;
               } catch (e) {
-                console.error("Error parsing stream chunk", e);
               }
             }
           }
         } catch (e) {
-          console.error("Error reading stream chunk", e);
           break;
         }
       }
