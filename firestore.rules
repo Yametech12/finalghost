@@ -1,0 +1,367 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (matches request.auth.uid)
+    // Fields:
+    //   - uid: string (required)
+    //   - displayName: string (optional)
+    //   - email: string (required)
+    //   - photoURL: string (optional)
+    //   - bio: string (optional)
+    //   - contactInfo: map (optional)
+    //   - role: string (required, 'user' or 'admin')
+    //   - createdAt: timestamp (required)
+    //   - lastLoginAt: timestamp (optional)
+    // Collection: calibrations
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required)
+    //   - typeId: string (required)
+    //   - answers: map (optional)
+    //   - timestamp: timestamp (required)
+    //
+    // Collection: oracle_analyses
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required)
+    //   - timestamp: timestamp (required)
+    //   - input: map (required)
+    //   - result: map (required)
+    //
+    // Collection: feedback
+    // Document ID: auto-generated
+    // Fields:
+    //   - content: string (required)
+    //   - timestamp: timestamp (required)
+    //   - userId: string (optional)
+    //
+    // Collection: field_reports
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required)
+    //   - author: string (required)
+    //   - type: string (required)
+    //   - scenario: string (required)
+    //   - action: string (required)
+    //   - result: string (required)
+    //   - timestamp: timestamp (required)
+    //   - likes: number (required)
+    //
+    // Collection: report_likes
+    // Document ID: {userId}_{reportId}
+    // Fields:
+    //   - userId: string (required)
+    //   - reportId: string (required)
+    //   - timestamp: timestamp (required)
+    //
+    // Collection: field_report_comments
+    // Document ID: auto-generated
+    // Fields:
+    //   - reportId: string (required)
+    //   - userId: string (required)
+    //   - author: string (required)
+    //   - content: string (required)
+    //   - timestamp: timestamp (required)
+    //
+    // Collection: favorites
+    // Document ID: {userId}_{contentType}_{contentId}
+    // Fields:
+    //   - userId: string (required)
+    //   - contentId: string (required)
+    //   - contentType: string (required, 'type', 'guide', 'calibration')
+    //   - category: string (required, 'Personality', 'Content', 'Assessment')
+    //   - title: string (required)
+    //   - timestamp: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isValidEmail(email) {
+      return email == null || (email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"));
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*") || url.matches("^data:image/.*"));
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data, userId) {
+      return hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'role', 'createdAt', 'bio', 'contactInfo', 'lastLoginAt']) &&
+             (!('uid' in data) || data.uid == userId) &&
+             (!('displayName' in data) || data.displayName == null || data.displayName is string) &&
+             (!('email' in data) || isValidEmail(data.email)) &&
+             (!('photoURL' in data) || data.photoURL == null || (data.photoURL is string && data.photoURL.size() < 2097152)) &&
+             (!('bio' in data) || data.bio == null || (data.bio is string && data.bio.size() < 1000)) &&
+             (!('contactInfo' in data) || data.contactInfo == null || (data.contactInfo is map && data.contactInfo.keys().hasOnly(['phone', 'instagram', 'twitter']))) &&
+             (!('role' in data) || data.role in ['user', 'admin']) &&
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('lastLoginAt' in data) || data.lastLoginAt is timestamp);
+    }
+
+    function isValidCalibration(data) {
+      return hasOnlyAllowedFields(['userId', 'typeId', 'answers', 'timestamp']) &&
+             data.userId == request.auth.uid &&
+             data.typeId is string && data.typeId.size() >= 3 && data.typeId.size() <= 10 &&
+             data.timestamp is timestamp;
+    }
+
+    function isValidOracleAnalysis(data) {
+      return hasOnlyAllowedFields(['userId', 'timestamp', 'input', 'result', 'scenarioSummary']) &&
+             data.userId == request.auth.uid &&
+             data.timestamp is timestamp &&
+             data.input is map &&
+             data.result is map &&
+             (!('scenarioSummary' in data) || (data.scenarioSummary is string && data.scenarioSummary.size() < 500));
+    }
+
+    function isValidFeedback(data) {
+      return hasOnlyAllowedFields(['userId', 'userName', 'email', 'type', 'message', 'createdAt', 'url', 'userAgent']) &&
+             data.message is string && data.message.size() > 0 && data.message.size() < 5000 &&
+             data.createdAt is timestamp &&
+             data.type is string && data.type in ['bug', 'feature', 'general', 'praise', 'suggestion', 'content', 'ui', 'performance'] &&
+             (!('userId' in data) || data.userId == request.auth.uid || data.userId == 'anonymous') &&
+             (!('userName' in data) || data.userName is string) &&
+             (!('email' in data) || data.email is string) &&
+             (!('url' in data) || data.url is string) &&
+             (!('userAgent' in data) || data.userAgent is string);
+    }
+
+    function isValidFieldReport(data) {
+      return hasOnlyAllowedFields(['userId', 'author', 'type', 'scenario', 'action', 'result', 'timestamp', 'likes', 'commentCount']) &&
+             data.userId == request.auth.uid &&
+             data.author is string && data.author.size() > 0 && data.author.size() < 100 &&
+             data.type is string && data.type.size() > 0 && data.type.size() < 100 &&
+             data.scenario is string && data.scenario.size() > 0 && data.scenario.size() < 10000 &&
+             data.action is string && data.action.size() > 0 && data.action.size() < 10000 &&
+             data.result is string && data.result.size() > 0 && data.result.size() < 10000 &&
+             data.timestamp is timestamp &&
+             data.likes is number &&
+             (!('commentCount' in data) || data.commentCount is number);
+    }
+
+    function isValidReportLikeUpdate(reportId) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']) &&
+             math.abs(request.resource.data.likes - resource.data.likes) == 1 &&
+             (
+               (request.resource.data.likes > resource.data.likes &&
+                !exists(/databases/$(database)/documents/report_likes/$(request.auth.uid + '_' + reportId)) &&
+                getAfter(/databases/$(database)/documents/report_likes/$(request.auth.uid + '_' + reportId)) != null) ||
+               (request.resource.data.likes < resource.data.likes &&
+                exists(/databases/$(database)/documents/report_likes/$(request.auth.uid + '_' + reportId)) &&
+                getAfter(/databases/$(database)/documents/report_likes/$(request.auth.uid + '_' + reportId)) == null)
+             );
+    }
+
+    function isValidReportCommentCountUpdate(reportId) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']) &&
+             math.abs(request.resource.data.commentCount - resource.data.commentCount) == 1;
+    }
+
+    function isValidFieldReportComment(data) {
+      return hasOnlyAllowedFields(['reportId', 'userId', 'author', 'content', 'timestamp']) &&
+             data.userId == request.auth.uid &&
+             data.reportId is string && data.reportId.size() > 0 &&
+             data.author is string && data.author.size() > 0 && data.author.size() < 100 &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 2000 &&
+             data.timestamp is timestamp;
+    }
+
+    function isValidFavorite(data) {
+      return hasOnlyAllowedFields(['userId', 'contentId', 'contentType', 'category', 'title', 'timestamp']) &&
+             data.userId == request.auth.uid &&
+             data.contentId is string && data.contentId.size() > 0 &&
+             data.contentType in ['type', 'guide', 'calibration'] &&
+             data.category in ['Personality', 'Content', 'Assessment'] &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.timestamp is timestamp;
+    }
+
+    function isValidDossier(data) {
+      return hasOnlyAllowedFields(['userId', 'name', 'typeId', 'phase', 'notes', 'lastInteraction', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.typeId is string && data.typeId.size() > 0 && data.typeId.size() < 20 &&
+             data.phase in ['Intrigue', 'Arousal', 'Comfort', 'Devotion'] &&
+             (!('notes' in data) || data.notes == null || (data.notes is string && data.notes.size() < 10000)) &&
+             (!('lastInteraction' in data) || data.lastInteraction == null || data.lastInteraction is string) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidAdvisorMessage(data) {
+      return hasOnlyAllowedFields(['userId', 'sessionId', 'role', 'content', 'imageUrls', 'timestamp']) &&
+             data.userId == request.auth.uid &&
+             (!('sessionId' in data) || data.sessionId is string) &&
+             data.role in ['user', 'model'] &&
+             data.content is string && data.content.size() < 100000 &&
+             (!('imageUrls' in data) || data.imageUrls == null || (data.imageUrls is list && data.imageUrls.size() < 10)) &&
+             data.timestamp is timestamp;
+    }
+
+    function isValidAdvisorSession(data) {
+      return hasOnlyAllowedFields(['userId', 'title', 'timestamp', 'updatedAt']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.timestamp is timestamp &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    function isValidAssessmentResult(data) {
+      return hasOnlyAllowedFields(['userId', 'typeId', 'answers', 'timestamp']) &&
+             data.userId == request.auth.uid &&
+             data.typeId is string && data.typeId.size() >= 3 && data.typeId.size() <= 10 &&
+             data.timestamp is timestamp;
+    }
+
+    function isValidVerificationCode(data) {
+      return hasOnlyAllowedFields(['code', 'expiresAt']) &&
+             data.code is string && data.code.size() == 6 &&
+             data.expiresAt is number;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /public_config/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /private_config/{configId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /users/{userId} {
+      // Allow read/write only if the user is authenticated AND they are the owner, or if they are an admin
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) || isAdmin();
+      
+      // Validation for create/update
+      allow create: if isOwner(userId) && isValidUser(request.resource.data, userId) && 
+                    (request.resource.data.role == 'user' || isAdmin());
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data, userId) && 
+                    (isAdmin() || (isOwner(userId) && (!('role' in request.resource.data) || !('role' in resource.data) || request.resource.data.role == resource.data.role)));
+      allow delete: if isAdmin();
+    }
+
+    match /calibrations/{calibrationId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidCalibration(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /oracle_analyses/{analysisId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidOracleAnalysis(request.resource.data);
+      allow update: if isDocOwner() && isValidOracleAnalysis(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /feedback/{feedbackId} {
+      allow create: if isValidFeedback(request.resource.data);
+      allow read, delete: if isAdmin();
+    }
+
+    match /field_reports/{reportId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidFieldReport(request.resource.data);
+      allow update: if isAuthenticated() && (
+        // Owner updating content
+        (isDocOwner() && isValidFieldReport(request.resource.data)) ||
+        // Anyone updating likes (must be atomic increment/decrement and consistent with report_likes)
+        isValidReportLikeUpdate(reportId) ||
+        // Anyone updating commentCount
+        isValidReportCommentCountUpdate(reportId)
+      );
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /report_likes/{likeId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && 
+                    request.auth.uid == request.resource.data.userId &&
+                    likeId == request.auth.uid + "_" + request.resource.data.reportId;
+      allow delete: if (isAuthenticated() && request.auth.uid == resource.data.userId) || isAdmin();
+    }
+
+    match /field_report_comments/{commentId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidFieldReportComment(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /favorites/{favoriteId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidFavorite(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /dossiers/{dossierId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidDossier(request.resource.data);
+      allow update: if isDocOwner() && isValidDossier(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /advisor_sessions/{sessionId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidAdvisorSession(request.resource.data);
+      allow update: if isDocOwner() && isValidAdvisorSession(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /advisor_messages/{messageId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidAdvisorMessage(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /assessment_results/{resultId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidAssessmentResult(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /verification_codes/{email} {
+      // Require authentication for verification codes to prevent abuse
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

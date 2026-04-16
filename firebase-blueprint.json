@@ -1,0 +1,216 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "displayName": { "type": "string", "description": "User's full name" },
+        "email": { "type": "string", "format": "email", "description": "User's email address" },
+        "photoURL": { "type": "string", "description": "URL to user's profile picture" },
+        "role": { "type": "string", "enum": ["admin", "user"], "description": "User's role" },
+        "bio": { "type": "string", "description": "User's short biography" },
+        "contactInfo": {
+          "type": "object",
+          "properties": {
+            "phone": { "type": "string" },
+            "instagram": { "type": "string" },
+            "twitter": { "type": "string" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the user account was created" },
+        "lastLoginAt": { "type": "string", "format": "date-time", "description": "When the user last logged in" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Calibration": {
+      "title": "Calibration",
+      "description": "A personality calibration result",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the user who performed the calibration" },
+        "typeId": { "type": "string", "description": "The resulting EPIMETHEUS type ID (e.g., TDI)" },
+        "answers": { "type": "object", "description": "The answers provided during the quiz" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the calibration was performed" }
+      },
+      "required": ["userId", "typeId", "timestamp"]
+    },
+    "Feedback": {
+      "title": "Feedback",
+      "description": "User feedback submission",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the user (optional)" },
+        "content": { "type": "string", "description": "The feedback message" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the feedback was submitted" }
+      },
+      "required": ["content", "timestamp"]
+    },
+    "OracleAnalysis": {
+      "title": "OracleAnalysis",
+      "description": "AI-generated personality analysis",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the user" },
+        "typeId": { "type": "string", "description": "The EPIMETHEUS type ID" },
+        "analysis": { "type": "string", "description": "The AI analysis text" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the analysis was generated" }
+      },
+      "required": ["userId", "typeId", "analysis", "timestamp"]
+    },
+    "Favorite": {
+      "title": "Favorite",
+      "description": "A user's favorite item (type, guide section, or calibration)",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the user" },
+        "contentId": { "type": "string", "description": "ID of the favorited content" },
+        "contentType": { "type": "string", "enum": ["type", "guide", "calibration"], "description": "Type of content" },
+        "title": { "type": "string", "description": "Display title for the favorite" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When it was favorited" }
+      },
+      "required": ["userId", "contentId", "contentType", "title", "timestamp"]
+    },
+    "FieldReport": {
+      "title": "FieldReport",
+      "description": "A community field report",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the author" },
+        "author": { "type": "string", "description": "Display name of the author" },
+        "type": { "type": "string", "description": "Target personality type" },
+        "scenario": { "type": "string", "description": "The scenario context" },
+        "action": { "type": "string", "description": "The action taken" },
+        "result": { "type": "string", "description": "The outcome" },
+        "likes": { "type": "number", "description": "Number of likes" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the report was submitted" }
+      },
+      "required": ["userId", "author", "type", "scenario", "action", "result", "likes", "timestamp"]
+    },
+    "ReportLike": {
+      "title": "ReportLike",
+      "description": "A like on a field report",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the user who liked" },
+        "reportId": { "type": "string", "description": "ID of the report liked" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the like occurred" }
+      },
+      "required": ["userId", "reportId", "timestamp"]
+    },
+    "FieldReportComment": {
+      "title": "FieldReportComment",
+      "description": "A comment on a field report",
+      "type": "object",
+      "properties": {
+        "reportId": { "type": "string", "description": "ID of the report commented on" },
+        "userId": { "type": "string", "description": "UID of the author" },
+        "author": { "type": "string", "description": "Display name of the author" },
+        "content": { "type": "string", "description": "The comment content" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the comment was submitted" }
+      },
+      "required": ["reportId", "userId", "author", "content", "timestamp"]
+    },
+    "Dossier": {
+      "title": "Dossier",
+      "description": "A saved subject dossier",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the user who owns this dossier" },
+        "name": { "type": "string", "description": "Name of the subject" },
+        "typeId": { "type": "string", "description": "Personality type ID" },
+        "phase": { "type": "string", "enum": ["Intrigue", "Arousal", "Comfort", "Devotion"] },
+        "notes": { "type": "string", "description": "Field notes" },
+        "lastInteraction": { "type": "string", "description": "Date of last interaction" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "typeId", "phase", "createdAt"]
+    },
+    "AdvisorMessage": {
+      "title": "AdvisorMessage",
+      "description": "A message in the Advisor chat history",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the user" },
+        "role": { "type": "string", "enum": ["user", "model"] },
+        "content": { "type": "string", "description": "Message content" },
+        "imageUrls": { "type": "array", "items": { "type": "string" } },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "role", "content", "timestamp"]
+    },
+    "AssessmentResult": {
+      "title": "AssessmentResult",
+      "description": "A past assessment result",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the user" },
+        "typeId": { "type": "string", "description": "Resulting personality type ID" },
+        "answers": { "type": "object", "description": "Answers given during assessment" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "typeId", "timestamp"]
+    },
+    "VerificationCode": {
+      "title": "VerificationCode",
+      "description": "A temporary verification code for registration",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string", "description": "The 6-digit verification code" },
+        "expiresAt": { "type": "number", "description": "Timestamp when the code expires" }
+      },
+      "required": ["code", "expiresAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "/calibrations/{calibrationId}": {
+      "schema": "Calibration",
+      "description": "Stored calibration results"
+    },
+    "/feedback/{feedbackId}": {
+      "schema": "Feedback",
+      "description": "User feedback submissions"
+    },
+    "/oracle_analyses/{analysisId}": {
+      "schema": "OracleAnalysis",
+      "description": "AI-generated analyses"
+    },
+    "/favorites/{favoriteId}": {
+      "schema": "Favorite",
+      "description": "User favorites"
+    },
+    "/field_reports/{reportId}": {
+      "schema": "FieldReport",
+      "description": "Community field reports"
+    },
+    "/report_likes/{likeId}": {
+      "schema": "ReportLike",
+      "description": "Likes on field reports"
+    },
+    "/field_report_comments/{commentId}": {
+      "schema": "FieldReportComment",
+      "description": "Comments on field reports"
+    },
+    "/dossiers/{dossierId}": {
+      "schema": "Dossier",
+      "description": "User subject dossiers"
+    },
+    "/advisor_messages/{messageId}": {
+      "schema": "AdvisorMessage",
+      "description": "Advisor chat history"
+    },
+    "/assessment_results/{resultId}": {
+      "schema": "AssessmentResult",
+      "description": "Past assessment results"
+    },
+    "/verification_codes/{email}": {
+      "schema": "VerificationCode",
+      "description": "Temporary verification codes for email registration"
+    }
+  }
+}
