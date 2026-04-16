@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Camera, Loader2, User as UserIcon, Edit3, Crown, Calendar, Zap } from 'lucide-react';
+import { Camera, Loader2, User as UserIcon, Edit3, Crown, Calendar, Zap, X, Check } from 'lucide-react';
+import EasyCrop from 'react-easy-crop';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, storage } from '../lib/firebase';
@@ -14,20 +15,71 @@ interface ProfileCardProps {
 const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
   const { user, userData, updateUserData, updateUserProfile } = useAuth();
   const [uploading, setUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageSrc(reader.result as string);
+      setCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const onCropComplete = (_: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  };
+
+  const getCroppedImg = (imageSrc: string, pixelCrop: any): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const image = new Image();
+      image.src = imageSrc;
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = pixelCrop.width;
+        canvas.height = pixelCrop.height;
+
+        ctx?.drawImage(
+          image,
+          pixelCrop.x,
+          pixelCrop.y,
+          pixelCrop.width,
+          pixelCrop.height,
+          0,
+          0,
+          pixelCrop.width,
+          pixelCrop.height
+        );
+
+        canvas.toBlob((blob) => {
+          resolve(blob!);
+        }, 'image/jpeg', 0.95);
+      };
+    });
+  };
+
+  const handleCropSave = async () => {
+    if (!imageSrc || !croppedAreaPixels || !user) return;
+
+    setCropModalOpen(false);
     setUploading(true);
+
+    const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+    const croppedFile = new File([croppedBlob], 'profile.jpg', { type: 'image/jpeg' });
 
     try {
       // Try Firebase Storage first
       const storageRef = ref(storage, `users/${user.uid}/profile.jpg`);
-      const snapshot = await uploadBytes(storageRef, file);
+      const snapshot = await uploadBytes(storageRef, croppedFile);
       const downloadURL = await getDownloadURL(snapshot.ref);
 
       const userRef = doc(db, "users", user.uid);
@@ -56,38 +108,40 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
             toast.success("Profile photo updated! (Using local storage)");
           }
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(croppedBlob);
       } catch (fallbackError: any) {
         console.error("Fallback upload also failed:", fallbackError);
 
-      // Check for specific error types
-      if (storageError.code === 'storage/unauthorized') {
-        toast.error("Upload permission denied. Check Firebase Storage rules and CORS configuration.");
-      } else if (storageError.code === 'storage/canceled') {
-        toast.error("Upload was cancelled.");
-      } else if (storageError.code === 'storage/quota-exceeded') {
-        toast.error("Storage quota exceeded.");
-      } else if (storageError.code === 'storage/invalid-format') {
-        toast.error("Invalid file format.");
-      } else if (storageError.code === 'storage/invalid-argument') {
-        toast.error("Invalid upload request. Please try again.");
-      } else if (storageError.message?.includes('CORS') || storageError.message?.includes('preflight')) {
-        toast.error("CORS error. Run 'setup-cors.bat' and apply CORS configuration to Firebase Storage.");
-      } else if (storageError.message?.includes('network') || storageError.message?.includes('offline')) {
-        toast.error("Network error. Check your connection and try again.");
-      } else {
-        handleFirestoreError(storageError, OperationType.UPDATE, `users/${user.uid}`);
-        toast.error("Failed to upload image. Using local storage instead.");
-      }
-
-        setPreviewUrl(null);
+        // Check for specific error types
+        if (storageError.code === 'storage/unauthorized') {
+          toast.error("Upload permission denied. Check Firebase Storage rules and CORS configuration.");
+        } else if (storageError.code === 'storage/canceled') {
+          toast.error("Upload was cancelled.");
+        } else if (storageError.code === 'storage/quota-exceeded') {
+          toast.error("Storage quota exceeded.");
+        } else if (storageError.code === 'storage/invalid-format') {
+          toast.error("Invalid file format.");
+        } else if (storageError.code === 'storage/invalid-argument') {
+          toast.error("Invalid upload request. Please try again.");
+        } else if (storageError.message?.includes('CORS') || storageError.message?.includes('preflight')) {
+          toast.error("CORS error. Run 'setup-cors.bat' and apply CORS configuration to Firebase Storage.");
+        } else if (storageError.message?.includes('network') || storageError.message?.includes('offline')) {
+          toast.error("Network error. Check your connection and try again.");
+        } else {
+          handleFirestoreError(storageError, OperationType.UPDATE, `users/${user.uid}`);
+          toast.error("Failed to upload image. Using local storage instead.");
+        }
       }
     } finally {
       setUploading(false);
+      setImageSrc(null);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
     }
   };
 
-  const displayImage = previewUrl || userData?.photoURL;
+  const displayImage = userData?.photoURL;
   const memberSince = userData?.createdAt?.toDate?.()?.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) || 'New Member';
 
   return (
@@ -193,6 +247,75 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
           </button>
         </div>
       </div>
+
+      {/* Crop Modal */}
+      {cropModalOpen && imageSrc && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Camera className="w-5 h-5 text-accent-primary" />
+                Crop Image
+              </h2>
+              <button
+                onClick={() => {
+                  setCropModalOpen(false);
+                  setImageSrc(null);
+                }}
+                className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="relative h-64 bg-black">
+              <EasyCrop
+                image={imageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                onCropChange={setCrop}
+                onCropAreaChange={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
+
+            <div className="p-4 border-t border-white/5">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-300 mb-2">Zoom</label>
+                <input
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  value={zoom}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setCropModalOpen(false);
+                    setImageSrc(null);
+                  }}
+                  className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCropSave}
+                  className="flex-1 py-3 rounded-xl accent-gradient text-white font-bold shadow-lg shadow-accent-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                >
+                  <Check className="w-5 h-5" />
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
