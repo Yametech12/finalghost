@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Camera, Loader2, User as UserIcon, Edit3, Crown, Calendar, Zap, X, Check } from 'lucide-react';
-import EasyCrop from 'react-easy-crop';
+import { Camera, Loader2, User as UserIcon, Edit3, Crown, Calendar, Zap } from 'lucide-react';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, storage } from '../lib/firebase';
@@ -15,11 +14,6 @@ interface ProfileCardProps {
 const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
   const { user, userData, updateUserData, updateUserProfile } = useAuth();
   const [uploading, setUploading] = useState(false);
-  const [cropModalOpen, setCropModalOpen] = useState(false);
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -37,86 +31,13 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImageSrc(reader.result as string);
-      setCropModalOpen(true);
-    };
-    reader.onerror = () => {
-      toast.error('Failed to read image file');
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const onCropComplete = (_: any, croppedAreaPixels: any) => {
-    setCroppedAreaPixels(croppedAreaPixels);
-  };
-
-  const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<Blob> => {
-    return new Promise((resolve, reject) => {
-      const image = new Image();
-      image.src = imageSrc;
-      image.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-
-          if (!ctx) {
-            reject(new Error('Canvas context not available'));
-            return;
-          }
-
-          // Ensure minimum dimensions
-          const width = Math.max(pixelCrop.width, 100);
-          const height = Math.max(pixelCrop.height, 100);
-
-          canvas.width = width;
-          canvas.height = height;
-
-          ctx.drawImage(
-            image,
-            pixelCrop.x,
-            pixelCrop.y,
-            pixelCrop.width,
-            pixelCrop.height,
-            0,
-            0,
-            width,
-            height
-          );
-
-          canvas.toBlob((blob) => {
-            if (blob) {
-              resolve(blob);
-            } else {
-              reject(new Error('Failed to create image blob'));
-            }
-          }, 'image/jpeg', 0.9);
-        } catch (error) {
-          reject(error);
-        }
-      };
-      image.onerror = () => reject(new Error('Failed to load image'));
-    });
-  };
-
-  const handleCropSave = async () => {
-    if (!imageSrc || !croppedAreaPixels || !user) {
-      toast.error('Crop data not available');
-      return;
-    }
-
-    setCropModalOpen(false);
     setUploading(true);
 
     try {
-      const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
-      const croppedFile = new File([croppedBlob], 'profile.jpg', { type: 'image/jpeg' });
-
       try {
         // Try Firebase Storage first
         const storageRef = ref(storage, `users/${user.uid}/profile.jpg`);
-        const snapshot = await uploadBytes(storageRef, croppedFile);
+        const snapshot = await uploadBytes(storageRef, file);
         const downloadURL = await getDownloadURL(snapshot.ref);
 
         const userRef = doc(db, "users", user.uid);
@@ -150,7 +71,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
               toast.success("Profile photo updated! (Using local storage)");
             }
           };
-          reader.readAsDataURL(croppedBlob);
+          reader.readAsDataURL(file);
         } catch (fallbackError: any) {
           const isQuotaError = fallbackError?.code === 'resource-exhausted' || (fallbackError instanceof Error && fallbackError.message.includes('quota'));
           if (isQuotaError) {
@@ -162,15 +83,11 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
           }
         }
       }
-    } catch (cropError) {
-      console.error('Cropping failed:', cropError);
-      toast.error('Failed to crop image. Please try again.');
+    } catch (error) {
+      console.error('Upload failed:', error);
+      toast.error('Failed to upload image. Please try again.');
     } finally {
       setUploading(false);
-      setImageSrc(null);
-      setCrop({ x: 0, y: 0 });
-      setZoom(1);
-      setCroppedAreaPixels(null);
     }
   };
 
@@ -218,9 +135,9 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
                   </div>
                 )}
 
-                {/* Hover Overlay */}
+                {/* Photo Upload */}
                 {!uploading && (
-                  <label className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-all duration-300 cursor-pointer flex flex-col items-center justify-center backdrop-blur-[2px] z-10 rounded-full">
+                  <label className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-all duration-300 cursor-pointer flex items-center justify-center backdrop-blur-[2px] z-10 rounded-full">
                     <Camera className="w-7 h-7 text-white mb-1" />
                     <span className="text-[9px] font-bold text-white uppercase tracking-wider">
                       Update
@@ -229,7 +146,6 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
                       type="file"
                       className="hidden"
                       accept="image/*"
-                      capture="environment"
                       onChange={handleImageUpload}
                     />
                   </label>
@@ -285,98 +201,9 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
     </div>
   );
 
-  const cropModal = cropModalOpen && imageSrc && (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-2 sm:p-4 bg-black/90 backdrop-blur-sm">
-      <div className="relative w-full max-w-xs sm:max-w-sm bg-slate-900 border border-white/10 rounded-2xl sm:rounded-3xl shadow-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="p-3 sm:p-4 border-b border-white/5 flex items-center justify-between flex-shrink-0">
-          <h2 className="text-base sm:text-lg font-bold flex items-center gap-2">
-            <Camera className="w-4 h-4 sm:w-5 sm:h-5 text-accent-primary" />
-            <span className="hidden sm:inline">Crop Photo</span>
-            <span className="sm:hidden">Crop</span>
-          </h2>
-          <button
-            onClick={() => {
-              setCropModalOpen(false);
-              setImageSrc(null);
-              setCrop({ x: 0, y: 0 });
-              setZoom(1);
-            }}
-            className="p-1.5 sm:p-2 hover:bg-white/5 rounded-lg transition-colors touch-manipulation"
-          >
-            <X className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-        </div>
 
-        <div className="relative flex-1 min-h-0 bg-slate-800 overflow-hidden">
-          <EasyCrop
-            image={imageSrc}
-            crop={crop}
-            zoom={zoom}
-            aspect={1}
-            cropShape="round"
-            showGrid={false}
-            onCropChange={setCrop}
-            onCropAreaChange={onCropComplete}
-            onZoomChange={setZoom}
-            classes={{
-              containerClassName: 'rounded-none h-full',
-              mediaClassName: 'rounded-none',
-            }}
-            restrictPosition={false}
-            zoomWithScroll={true}
-          />
-        </div>
 
-        <div className="p-3 sm:p-4 border-t border-white/5 space-y-3 sm:space-y-4 flex-shrink-0">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Zoom: {zoom.toFixed(1)}x
-              <span className="text-slate-500 ml-2">(pinch or scroll)</span>
-            </label>
-            <input
-              type="range"
-              min={1}
-              max={3}
-              step={0.1}
-              value={zoom}
-              onChange={(e) => setZoom(Number(e.target.value))}
-              className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer touch-manipulation"
-            />
-          </div>
-
-          <div className="flex gap-2 sm:gap-3">
-            <button
-              onClick={() => {
-                setCropModalOpen(false);
-                setImageSrc(null);
-                setCrop({ x: 0, y: 0 });
-                setZoom(1);
-              }}
-              className="flex-1 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all text-xs sm:text-sm touch-manipulation"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleCropSave}
-              disabled={uploading}
-              className="flex-1 py-2 sm:py-2.5 rounded-lg sm:rounded-xl accent-gradient text-white font-bold shadow-lg shadow-accent-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1 sm:gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm touch-manipulation"
-            >
-              {uploading ? <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" /> : <Check className="w-3 h-3 sm:w-4 sm:h-4" />}
-              <span className="hidden sm:inline">{uploading ? 'Saving...' : 'Save'}</span>
-              <span className="sm:hidden">{uploading ? 'Save...' : 'Save'}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  return (
-    <>
-      {profileCard}
-      {cropModal}
-    </>
-  );
+  return profileCard;
 };
 
 export default ProfileCard;
