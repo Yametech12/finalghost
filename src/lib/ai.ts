@@ -65,7 +65,7 @@ export async function chatCompletion(
           "Unknown error";
 
         // If it's a 404 (model not found), try next model
-        if (response.status === 404 || errorMessage.includes('endpoints found')) {
+        if (response.status === 404 || (typeof errorMessage === 'string' && errorMessage.includes('endpoints found'))) {
           console.warn(`Model ${modelToTry} not available, trying next model...`);
           lastError = new Error(`AI API error: ${response.status} - ${errorMessage}`);
           continue;

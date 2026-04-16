@@ -76,7 +76,7 @@ export default defineConfig(({mode}) => {
             'charts-vendor': ['recharts'],
 
             // Image processing
-            'image-vendor': ['browser-image-compression', 'html2canvas', 'html2pdf.js', 'react-easy-crop'],
+            'image-vendor': ['browser-image-compression', 'html2canvas', 'html2pdf.js'],
 
              // AI and external APIs
              'ai-vendor': ['@google/generative-ai'],

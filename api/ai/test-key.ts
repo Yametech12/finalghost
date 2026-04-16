@@ -1,5 +1,5 @@
-import { getApiKey } from '../../../services/firebase.js';
-import { AI_PROVIDER, API_URL } from '../../../services/ai.js';
+import { getApiKey } from '../services/firebase';
+import { AI_PROVIDER, API_URL } from '../services/ai';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'GET') {

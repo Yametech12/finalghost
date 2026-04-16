@@ -1,12 +1,10 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: any, res: any) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const diagnostics = {
+    const diagnostics: any = {
       timestamp: new Date().toISOString(),
       environment: {
         node_env: process.env.NODE_ENV,
@@ -26,12 +24,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Test OpenRouter models endpoint
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const modelsResponse = await fetch('https://openrouter.ai/api/v1/models', {
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 10000
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       diagnostics.models_endpoint = {
         status: modelsResponse.status,
@@ -55,7 +58,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Test API key configuration
     try {
-      const { getApiKey } = await import('../../../services/firebase.js');
+      const { getApiKey } = await import('../services/firebase');
       const apiKey = await getApiKey();
       diagnostics.api_key_config = {
         has_key: !!apiKey,
@@ -63,20 +66,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         key_prefix: apiKey?.substring(0, 10) || null,
         source: process.env.OPENROUTER_API_KEY ? 'environment' : 'firestore'
       };
-    } catch (keyError) {
+    } catch (keyError: any) {
       diagnostics.api_key_config = {
-        error: (keyError as Error).message
+        error: keyError.message
       };
     }
 
     // Test a simple chat request if API key is available
-    if (diagnostics.api_key_config.has_key) {
+    if (diagnostics.api_key_config?.has_key) {
       try {
-        const { getApiKey } = await import('../../../services/firebase.js');
-        const { API_URL } = await import('../../../services/ai.js');
+        const { getApiKey } = await import('../services/firebase');
+        const { API_URL } = await import('../services/ai');
         const apiKey = await getApiKey();
 
         if (apiKey) {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
+
           const testResponse = await fetch(API_URL, {
             method: 'POST',
             headers: {
@@ -90,8 +96,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               messages: [{ role: "user", content: "Say 'Hello' in one word." }],
               max_tokens: 5
             }),
-            timeout: 15000
+            signal: controller.signal
           });
+
+          clearTimeout(timeoutId);
 
           diagnostics.chat_test = {
             status: testResponse.status,
@@ -112,9 +120,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             diagnostics.chat_test.error = errorData;
           }
         }
-      } catch (chatError) {
+      } catch (chatError: any) {
         diagnostics.chat_test = {
-          error: (chatError as Error).message
+          error: chatError.message
         };
       }
     }

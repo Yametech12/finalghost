@@ -1,5 +1,5 @@
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
-import { getDb } from '../../../services/firebase.js';
+import { getDb } from '../services/firebase';
 
 interface VerifyCodeRequest {
   email: string;

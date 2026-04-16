@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
-import { doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
-import { getDb } from '../../../services/firebase.js';
+import { doc, setDoc } from 'firebase/firestore';
+import { getDb } from '../services/firebase';
 
 interface SendVerificationRequest {
   email: string;
@@ -20,7 +20,7 @@ function getTransporter() {
     return null;
   }
 
-  transporter = nodemailer.createTransporter({
+  transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: gmailUser,
