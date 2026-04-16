@@ -115,9 +115,9 @@ export default function ProfilesPage() {
             });
           }
         });
-        
+
         // Sort by date descending
-        const sorted = fetchedAssessments.sort((a, b) => 
+        const sorted = fetchedAssessments.sort((a, b) =>
           new Date(b.date).getTime() - new Date(a.date).getTime()
         );
         setAssessments(sorted);
@@ -132,8 +132,17 @@ export default function ProfilesPage() {
 
       } catch (error) {
         if (error instanceof Error && error.message.includes('offline')) {
-          console.warn("Firestore is offline. Could not fetch data.");
-          toast.error("Unable to load data while offline.");
+          console.warn("Firestore is offline. Using mock data for demo.");
+          // Mock data for demo
+          setAssessments([
+            { typeId: 'TDI', date: new Date(Date.now() - 86400000).toISOString(), name: 'The Playette' },
+            { typeId: 'TJI', date: new Date(Date.now() - 172800000).toISOString(), name: 'The Social Butterfly' },
+            { typeId: 'NDI', date: new Date(Date.now() - 259200000).toISOString(), name: 'The Lone Wolf' }
+          ]);
+          setFieldReports([
+            { id: '1', userId: user.uid, title: 'Sample Report', content: 'Mock field report' }
+          ]);
+          toast.info("Using demo data while offline.");
         } else {
           toast.error("Failed to load data.");
           handleFirestoreError(error, OperationType.LIST, 'calibrations');
