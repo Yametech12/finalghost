@@ -12,7 +12,8 @@ const firebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "epimtheusproject",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "epimtheusproject.firebasestorage.app",
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "304076302876",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:304076302876:web:2d0b30bd4affa403e40dd9"
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:304076302876:web:2d0b30bd4affa403e40dd9",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-99QDK0LPP3"
 };
 
 // Firestore database ID for multi-database support
