@@ -13,6 +13,7 @@ import { db } from '../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../utils/errorHandling';
 import { toast } from 'sonner';
+import { motion } from 'motion/react';
 import EditProfileModal from '../components/EditProfileModal';
 import { cn } from '../lib/utils';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -193,24 +194,78 @@ export default function ProfilesPage() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center space-y-2">
-                <div className="text-3xl font-black text-accent-primary">{assessments.length}</div>
+              <motion.div
+                className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center space-y-2"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <motion.div
+                  className="text-3xl font-black text-accent-primary"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                >
+                  {assessments.length}
+                </motion.div>
                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Analyses</div>
-              </div>
-              <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center space-y-2">
-                <div className="text-3xl font-black text-white">{achievements.length}</div>
+              </motion.div>
+              <motion.div
+                className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center space-y-2"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <motion.div
+                  className="text-3xl font-black text-white"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+                >
+                  {achievements.length}
+                </motion.div>
                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Badges</div>
-              </div>
-              <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center space-y-2">
-                <div className="text-3xl font-black text-accent-secondary">{fieldReports.length}</div>
+              </motion.div>
+              <motion.div
+                className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center space-y-2"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <motion.div
+                  className="text-3xl font-black text-accent-secondary"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+                >
+                  {fieldReports.length}
+                </motion.div>
                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Reports</div>
-              </div>
-              <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center space-y-2">
-                <div className="text-3xl font-black text-yellow-500">
+              </motion.div>
+              <motion.div
+                className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center space-y-2"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <motion.div
+                  className="text-3xl font-black text-yellow-500"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.6, type: "spring", stiffness: 200 }}
+                >
                   {assessments.length >= 15 ? 'S' : assessments.length >= 10 ? 'A+' : assessments.length >= 5 ? 'A' : assessments.length >= 1 ? 'B+' : 'C'}
-                </div>
+                </motion.div>
                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Rank</div>
-              </div>
+                <div className="w-full bg-white/10 rounded-full h-1 mt-2">
+                  <motion.div
+                    className="bg-yellow-500 h-1 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min((assessments.length / 15) * 100, 100)}%` }}
+                    transition={{ delay: 0.8, duration: 1, ease: "easeOut" }}
+                  />
+                </div>
+              </motion.div>
             </div>
           </div>
 
@@ -241,13 +296,33 @@ export default function ProfilesPage() {
             Achievements
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {achievements.map((achievement) => (
-              <div key={achievement.id} className="glass-card p-4 flex flex-col items-center text-center space-y-3 hover:border-accent-primary/30 transition-colors">
-                <div className={cn("w-12 h-12 rounded-full flex items-center justify-center", achievement.bg)}>
+            {achievements.map((achievement, index) => (
+              <motion.div
+                key={achievement.id}
+                className="glass-card p-4 flex flex-col items-center text-center space-y-3 hover:border-accent-primary/30 transition-colors"
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{
+                  delay: index * 0.1,
+                  type: "spring",
+                  stiffness: 100,
+                  damping: 15
+                }}
+                whileHover={{
+                  scale: 1.05,
+                  y: -5,
+                  transition: { duration: 0.2 }
+                }}
+              >
+                <motion.div
+                  className={cn("w-12 h-12 rounded-full flex items-center justify-center", achievement.bg)}
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.6 }}
+                >
                   <achievement.icon className={cn("w-6 h-6", achievement.color)} />
-                </div>
+                </motion.div>
                 <span className="text-sm font-bold text-white">{achievement.name}</span>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -422,10 +497,21 @@ export default function ProfilesPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {filteredArchetypes.map((profile) => (
-            <div
+          {filteredArchetypes.map((profile, index) => (
+            <motion.div
               key={profile.id}
               className="glass-card p-8 flex flex-col space-y-6 group hover:border-accent-primary/30 transition-all duration-500 relative overflow-hidden"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                delay: index * 0.05,
+                duration: 0.5,
+                ease: "easeOut"
+              }}
+              whileHover={{
+                y: -8,
+                transition: { duration: 0.2 }
+              }}
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-accent-primary/5 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-accent-primary/10 transition-colors" />
               
@@ -468,7 +554,7 @@ export default function ProfilesPage() {
                 Full Breakdown
                 <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
               </Link>
-            </div>
+            </motion.div>
           ))}
         </div>
 
