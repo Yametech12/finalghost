@@ -2,11 +2,6 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "@vercel/node@2.x"
-    }
-  },
   "headers": [
     {
       "source": "/api/(.*)",
