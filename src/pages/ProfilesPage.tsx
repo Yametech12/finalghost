@@ -1,10 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { personalityTypes } from '../data/personalityTypes';
 import { Link } from 'react-router-dom';
-import { 
-  ChevronRight, Zap, Shield, Flame, Target, 
-  User, Plus, Clock, Search, 
-  Edit3, Info, Share2, Award, Star, BookOpen
+import {
+  ChevronRight, Zap, Shield, Flame, Target,
+  User, Plus, Clock, Search,
+  Edit3, Info, Share2, Award, Star, BookOpen, Crown
 } from 'lucide-react';
 import ProfileCard from '../components/ProfileCard';
 import ProfileCardModal from '../components/ProfileCardModal';
@@ -36,11 +36,17 @@ export default function ProfilesPage() {
     if (assessments.length >= 1) {
       list.push({ id: 'first_blood', name: 'First Calibration', icon: Target, color: 'text-blue-400', bg: 'bg-blue-400/10' });
     }
+    if (assessments.length >= 3) {
+      list.push({ id: 'explorer', name: 'Type Explorer', icon: Zap, color: 'text-cyan-400', bg: 'bg-cyan-400/10' });
+    }
     if (assessments.length >= 5) {
       list.push({ id: 'apprentice', name: 'Apprentice Profiler', icon: Star, color: 'text-yellow-400', bg: 'bg-yellow-400/10' });
     }
     if (assessments.length >= 10) {
       list.push({ id: 'master', name: 'Master Profiler', icon: Award, color: 'text-purple-400', bg: 'bg-purple-400/10' });
+    }
+    if (assessments.length >= 15) {
+      list.push({ id: 'grandmaster', name: 'Grandmaster', icon: Crown, color: 'text-gold-400', bg: 'bg-gold-400/10' });
     }
     if (userData?.bio) {
       list.push({ id: 'identity', name: 'Identity Established', icon: User, color: 'text-emerald-400', bg: 'bg-emerald-400/10' });
@@ -48,8 +54,14 @@ export default function ProfilesPage() {
     if (fieldReports.length >= 1) {
       list.push({ id: 'first_report', name: 'Field Operative', icon: BookOpen, color: 'text-orange-400', bg: 'bg-orange-400/10' });
     }
+    if (fieldReports.length >= 3) {
+      list.push({ id: 'active_reporter', name: 'Active Reporter', icon: Shield, color: 'text-indigo-400', bg: 'bg-indigo-400/10' });
+    }
     if (fieldReports.length >= 5) {
       list.push({ id: 'veteran_reporter', name: 'Veteran Reporter', icon: Flame, color: 'text-red-400', bg: 'bg-red-400/10' });
+    }
+    if (fieldReports.length >= 10) {
+      list.push({ id: 'legendary_reporter', name: 'Legendary Reporter', icon: Award, color: 'text-pink-400', bg: 'bg-pink-400/10' });
     }
     return list;
   }, [assessments.length, userData, fieldReports.length]);
@@ -194,7 +206,9 @@ export default function ProfilesPage() {
                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Reports</div>
               </div>
               <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center space-y-2">
-                <div className="text-3xl font-black text-yellow-500">A+</div>
+                <div className="text-3xl font-black text-yellow-500">
+                  {assessments.length >= 15 ? 'S' : assessments.length >= 10 ? 'A+' : assessments.length >= 5 ? 'A' : assessments.length >= 1 ? 'B+' : 'C'}
+                </div>
                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Rank</div>
               </div>
             </div>

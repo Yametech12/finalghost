@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Camera, Loader2, User as UserIcon, Settings, Edit3, Crown, Calendar, Zap } from 'lucide-react';
+import { Camera, Loader2, User as UserIcon, Edit3, Crown, Calendar, Zap } from 'lucide-react';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, storage } from '../lib/firebase';
@@ -182,18 +182,14 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="mt-8 flex gap-3">
+        {/* Action Button */}
+        <div className="mt-8">
           <button
             onClick={onEditProfile}
-            className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-semibold py-3 rounded-xl hover:opacity-90 transition-all shadow-lg shadow-accent-primary/25 hover:shadow-accent-primary/40 hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-semibold py-3 rounded-xl hover:opacity-90 transition-all shadow-lg shadow-accent-primary/25 hover:shadow-accent-primary/40 hover:scale-[1.02] active:scale-[0.98]"
           >
             <Edit3 className="w-4 h-4" />
             Edit Profile
-          </button>
-          <button className="flex-1 flex items-center justify-center gap-2 bg-white/5 text-white font-semibold py-3 border border-white/10 rounded-xl hover:bg-white/10 transition-all opacity-50 cursor-not-allowed">
-            <Settings className="w-4 h-4" />
-            Settings
           </button>
         </div>
       </div>
