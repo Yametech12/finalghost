@@ -159,7 +159,7 @@ export default function ProfilesPage() {
       {/* User Profile Section */}
       <div className="flex flex-col lg:flex-row gap-8 items-stretch">
         <div className="w-full lg:w-96 shrink-0">
-          <ProfileCard />
+          <ProfileCard onEditProfile={() => setIsEditModalOpen(true)} />
         </div>
         
         <div className="flex-grow glass-card p-8 flex flex-col justify-between relative overflow-hidden">

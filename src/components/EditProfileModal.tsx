@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, User, Phone, Instagram, Twitter, Save, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -19,6 +19,18 @@ export default function EditProfileModal({ isOpen, onClose }: EditProfileModalPr
     instagram: userData?.contactInfo?.instagram || '',
     twitter: userData?.contactInfo?.twitter || '',
   });
+
+  useEffect(() => {
+    if (userData) {
+      setFormData({
+        displayName: userData.displayName || '',
+        bio: userData.bio || '',
+        phone: userData.contactInfo?.phone || '',
+        instagram: userData.contactInfo?.instagram || '',
+        twitter: userData.contactInfo?.twitter || '',
+      });
+    }
+  }, [userData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
