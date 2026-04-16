@@ -110,7 +110,8 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() &&
-         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     // ===============================================================
@@ -134,6 +135,9 @@ service cloud.firestore {
       return hasOnlyAllowedFields(['userId', 'typeId', 'answers', 'timestamp']) &&
              data.userId == request.auth.uid &&
              data.typeId is string && data.typeId.size() >= 3 && data.typeId.size() <= 10 &&
+             (!('answers' in data) || data.answers == null || (data.answers is map && data.answers.size() <= 50 &&
+               data.answers.keys().hasOnly(['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'q9', 'q10']) &&
+               data.answers.values().hasOnly([1, 2, 3, 4, 5]))) &&
              data.timestamp is timestamp;
     }
 
@@ -173,15 +177,13 @@ service cloud.firestore {
 
     function isValidReportLikeUpdate(reportId) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']) &&
-             math.abs(request.resource.data.likes - resource.data.likes) == 1 &&
-             (
-               (request.resource.data.likes > resource.data.likes &&
-                !exists(/databases/$(database)/documents/report_likes/$(request.auth.uid + '_' + reportId)) &&
-                getAfter(/databases/$(database)/documents/report_likes/$(request.auth.uid + '_' + reportId)) != null) ||
-               (request.resource.data.likes < resource.data.likes &&
-                exists(/databases/$(database)/documents/report_likes/$(request.auth.uid + '_' + reportId)) &&
-                getAfter(/databases/$(database)/documents/report_likes/$(request.auth.uid + '_' + reportId)) == null)
-             );
+              math.abs(request.resource.data.likes - resource.data.likes) == 1 &&
+              (
+                (request.resource.data.likes > resource.data.likes &&
+                 !exists(/databases/$(database)/documents/report_likes/$(request.auth.uid + '_' + reportId))) ||
+                (request.resource.data.likes < resource.data.likes &&
+                 exists(/databases/$(database)/documents/report_likes/$(request.auth.uid + '_' + reportId)))
+              );
     }
 
     function isValidReportCommentCountUpdate(reportId) {
@@ -301,10 +303,13 @@ service cloud.firestore {
 
     match /field_reports/{reportId} {
       allow read: if true;
-      allow create: if isAuthenticated() && isValidFieldReport(request.resource.data);
+      allow create: if isAuthenticated() && isValidFieldReport(request.resource.data) &&
+                    request.resource.data.likes == 0 &&
+                    (!('commentCount' in request.resource.data) || request.resource.data.commentCount == 0);
       allow update: if isAuthenticated() && (
-        // Owner updating content
-        (isDocOwner() && isValidFieldReport(request.resource.data)) ||
+        // Owner updating content (only allowed fields)
+        (isDocOwner() && isValidFieldReport(request.resource.data) &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['author', 'scenario', 'action', 'result'])) ||
         // Anyone updating likes (must be atomic increment/decrement and consistent with report_likes)
         isValidReportLikeUpdate(reportId) ||
         // Anyone updating commentCount
@@ -356,6 +361,7 @@ service cloud.firestore {
     match /assessment_results/{resultId} {
       allow read: if isDocOwner() || isAdmin();
       allow create: if isAuthenticated() && isValidAssessmentResult(request.resource.data);
+      allow update: if isDocOwner() && isValidAssessmentResult(request.resource.data);
       allow delete: if isDocOwner() || isAdmin();
     }
 
