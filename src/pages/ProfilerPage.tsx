@@ -9,7 +9,9 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, li
 import { handleFirestoreError, OperationType } from '../utils/errorHandling';
 
 export default function ProfilerPage() {
-  const { user } = useAuth();
+  const auth = useAuth();
+  if (!auth) return <div>Loading...</div>;
+  const { user } = auth;
   const [traits, setTraits] = useState(() => {
     const saved = localStorage.getItem('profiler_current_traits');
     return safeParseJSON(saved, {

@@ -65,7 +65,9 @@ interface Feedback {
 }
 
 export default function AdminDashboard() {
-  const { userData } = useAuth();
+  const auth = useAuth();
+  if (!auth) return <div>Loading...</div>;
+  const { userData } = auth;
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<
     "dashboard" | "users" | "reports" | "feedback"

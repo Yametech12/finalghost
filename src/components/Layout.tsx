@@ -76,7 +76,9 @@ export default function Layout({ children }: LayoutProps) {
   const dropdownTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, userData, logout } = useAuth();
+  const auth = useAuth();
+  if (!auth) return <div>Loading...</div>;
+  const { user, userData, logout } = auth;
 
   // Mobile optimizations
   const isMobile = useIsMobile();

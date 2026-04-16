@@ -10,7 +10,9 @@ interface EditProfileModalProps {
 }
 
 export default function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
-  const { userData, updateUserData } = useAuth();
+  const auth = useAuth();
+  if (!auth) return null;
+  const { userData, updateUserData } = auth;
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     displayName: userData?.displayName || '',

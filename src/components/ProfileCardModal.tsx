@@ -14,7 +14,9 @@ interface ProfileCardModalProps {
 }
 
 export default function ProfileCardModal({ isOpen, onClose, assessmentsCount, achievementsCount = 0, fieldReportsCount = 0 }: ProfileCardModalProps) {
-  const { user, userData } = useAuth();
+  const auth = useAuth();
+  if (!auth) return null;
+  const { user, userData } = auth;
   const cardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [copied, setCopied] = useState(false);

@@ -19,7 +19,9 @@ interface Dossier {
 }
 
 export default function DossiersPage() {
-  const { user } = useAuth();
+  const auth = useAuth();
+  if (!auth) return <div>Loading...</div>;
+  const { user } = auth;
   const [dossiers, setDossiers] = useState<Dossier[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');

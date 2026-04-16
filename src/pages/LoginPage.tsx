@@ -34,8 +34,10 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { signInWithEmail, signInWithGoogle, resetPassword } = useAuth();
   const navigate = useNavigate();
+  const auth = useAuth();
+  if (!auth) return <div>Loading...</div>;
+  const { signInWithEmail, signInWithGoogle, resetPassword } = auth;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -9,7 +9,9 @@ import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 
 export default function ProfilePhotoUpload() {
-  const { user, updateUserProfile } = useAuth();
+  const auth = useAuth();
+  if (!auth) return null;
+  const { user, updateUserProfile } = auth;
   const [isUploading, setIsUploading] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);

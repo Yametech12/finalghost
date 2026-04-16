@@ -137,7 +137,9 @@ export default function AssessmentPage() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [pastResults, setPastResults] = useState<{typeId: string, date: string}[]>([]);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const auth = useAuth();
+  if (!auth) return <div>Loading...</div>;
+  const { user } = auth;
 
   useEffect(() => {
     localStorage.setItem('assessment_current_step', currentStep.toString());

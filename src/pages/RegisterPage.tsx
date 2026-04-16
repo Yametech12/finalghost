@@ -54,8 +54,10 @@ export default function RegisterPage() {
   const [verificationSent, setVerificationSent] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
 
-  const { signUpWithEmail, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const auth = useAuth();
+  if (!auth) return <div>Loading...</div>;
+  const { signUpWithEmail, signInWithGoogle } = auth;
 
   // Check if user just verified their email
   useEffect(() => {

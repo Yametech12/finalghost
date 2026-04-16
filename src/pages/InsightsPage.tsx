@@ -12,7 +12,9 @@ import { handleFirestoreError, OperationType } from '../utils/errorHandling';
 import { Skeleton } from '../components/ui/Skeleton';
 
 export default function InsightsPage() {
-  const { user } = useAuth();
+  const auth = useAuth();
+  if (!auth) return <div>Loading...</div>;
+  const { user } = auth;
   const [loading, setLoading] = useState(true);
   const [calibrations, setCalibrations] = useState<any[]>([]);
 

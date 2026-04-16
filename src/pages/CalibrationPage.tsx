@@ -112,7 +112,9 @@ const practiceScenarios = [
 ];
 
 export default function CalibrationPage() {
-  const { user } = useAuth();
+  const auth = useAuth();
+  if (!auth) return <div>Loading...</div>;
+  const { user } = auth;
   const [mode, setMode] = React.useState<'ai' | 'manual' | 'practice' | 'history'>('ai');
   const [structuredInput, setStructuredInput] = React.useState({
     eyeContact: '',

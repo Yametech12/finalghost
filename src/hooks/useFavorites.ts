@@ -26,7 +26,11 @@ const getCategory = (type: string): 'Personality' | 'Content' | 'Assessment' => 
 };
 
 export function useFavorites() {
-  const { user } = useAuth();
+  const auth = useAuth();
+  if (!auth) {
+    return { favorites: [], loading: true, toggleFavorite: async () => {}, isFavorite: () => false };
+  }
+  const { user } = auth;
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
 

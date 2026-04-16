@@ -52,7 +52,11 @@ const pageTransition = {
 };
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const auth = useAuth();
+  if (!auth) {
+    return <LoadingScreen />;
+  }
+  const { user, loading } = auth;
 
   if (loading) {
     return <LoadingScreen />;
@@ -66,7 +70,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const auth = useAuth();
+  if (!auth) {
+    return <LoadingScreen />;
+  }
+  const { user, loading } = auth;
 
   if (loading) {
     return <LoadingScreen />;

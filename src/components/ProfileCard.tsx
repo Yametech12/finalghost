@@ -12,7 +12,9 @@ interface ProfileCardProps {
 }
 
 const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
-  const { user, userData, updateUserData, updateUserProfile } = useAuth();
+  const auth = useAuth();
+  if (!auth) return null;
+  const { user, userData, updateUserData, updateUserProfile } = auth;
   const [uploading, setUploading] = useState(false);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

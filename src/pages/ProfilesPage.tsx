@@ -25,7 +25,9 @@ type Assessment = {
 };
 
 export default function ProfilesPage() {
-  const { user, userData } = useAuth();
+  const auth = useAuth();
+  if (!auth) return <div>Loading...</div>;
+  const { user, userData } = auth;
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [fieldReports, setFieldReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

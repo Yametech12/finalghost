@@ -53,7 +53,9 @@ interface FieldReportComment {
 }
 
 export default function FieldGuidePage() {
-  const { user } = useAuth();
+  const auth = useAuth();
+  if (!auth) return <div>Loading...</div>;
+  const { user } = auth;
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedType, setSelectedType] = React.useState<string | null>(null);
   const [activeTab, setActiveTab] = React.useState<'scenarios' | 'reports'>('scenarios');

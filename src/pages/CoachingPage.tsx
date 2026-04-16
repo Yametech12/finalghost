@@ -14,7 +14,9 @@ interface Message {
 }
 
 export default function CoachingPage() {
-  const { user } = useAuth();
+  const auth = useAuth();
+  if (!auth) return <div>Loading...</div>;
+  const { user } = auth;
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',

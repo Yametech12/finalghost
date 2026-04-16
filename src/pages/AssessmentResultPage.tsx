@@ -16,7 +16,9 @@ export default function AssessmentResultPage() {
   const initialSaved = searchParams.get('saved') === 'true';
   const profile = personalityTypes.find(p => p.id === typeId);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const auth = useAuth();
+  if (!auth) return <div>Loading...</div>;
+  const { user } = auth;
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(initialSaved);
 
