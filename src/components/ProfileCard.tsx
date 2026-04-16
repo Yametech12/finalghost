@@ -25,10 +25,25 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image file is too large. Please choose a file under 10MB');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
       setImageSrc(reader.result as string);
       setCropModalOpen(true);
+    };
+    reader.onerror = () => {
+      toast.error('Failed to read image file');
     };
     reader.readAsDataURL(file);
   };
@@ -38,42 +53,53 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
   };
 
   const getCroppedImg = (imageSrc: string, pixelCrop: any): Promise<Blob> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const image = new Image();
       image.src = imageSrc;
       image.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
 
-        canvas.width = pixelCrop.width;
-        canvas.height = pixelCrop.height;
+          if (!ctx) {
+            reject(new Error('Canvas context not available'));
+            return;
+          }
 
-        ctx?.drawImage(
-          image,
-          pixelCrop.x,
-          pixelCrop.y,
-          pixelCrop.width,
-          pixelCrop.height,
-          0,
-          0,
-          pixelCrop.width,
-          pixelCrop.height
-        );
+          // Ensure minimum dimensions
+          const width = Math.max(pixelCrop.width, 100);
+          const height = Math.max(pixelCrop.height, 100);
 
-        canvas.toBlob((blob) => {
-          resolve(blob!);
-        }, 'image/jpeg', 0.95);
-      };
-    });
-  };
+          canvas.width = width;
+          canvas.height = height;
 
-  const handleCropSave = async () => {
-    if (!imageSrc || !croppedAreaPixels || !user) return;
+          ctx.drawImage(
+            image,
+            pixelCrop.x,
+            pixelCrop.y,
+            pixelCrop.width,
+            pixelCrop.height,
+            0,
+            0,
+            width,
+            height
+          );
 
-    setCropModalOpen(false);
-    setUploading(true);
-
-    const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+          // Try toBlob first
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              // Fallback: use data URL to create blob
+    let croppedBlob: Blob;
+    try {
+      croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+    } catch (cropError) {
+      console.error('Cropping failed:', cropError);
+      toast.error('Failed to crop image. Please try again.');
+      setUploading(false);
+      return;
+    }
     const croppedFile = new File([croppedBlob], 'profile.jpg', { type: 'image/jpeg' });
 
     try {
@@ -144,9 +170,9 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
   const displayImage = userData?.photoURL;
   const memberSince = userData?.createdAt?.toDate?.()?.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) || 'New Member';
 
-  return (
+  const profileCard = (
     <div className="max-w-md mx-auto bg-mystic-900/80 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl shadow-accent-primary/5 overflow-hidden">
-      
+
       {/* Animated Banner */}
       <div className="h-36 bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-primary bg-[length:200%_200%] animate-gradient-x relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-mystic-900/60" />
@@ -155,20 +181,20 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
 
       {/* Profile Content */}
       <div className="px-8 pb-8 relative -mt-20">
-        
+
         {/* Avatar Container */}
         <div className="relative flex justify-center mb-6">
           <div className="relative">
             {/* Glow Effect */}
             <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-accent-primary to-accent-secondary blur-lg opacity-40 animate-pulse" />
-            
+
             {/* Avatar */}
             <div className="relative w-28 h-28 rounded-full p-1 bg-mystic-900 shadow-2xl">
               <div className="w-full h-full rounded-full overflow-hidden bg-mystic-800 border-3 border-gradient-to-r from-accent-primary to-accent-secondary">
                 {displayImage ? (
-                  <img 
-                    src={displayImage} 
-                    alt="Profile" 
+                  <img
+                    src={displayImage}
+                    alt="Profile"
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
                   />
@@ -177,7 +203,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
                     <UserIcon size={48} className="text-mystic-600" />
                   </div>
                 )}
-                
+
                 {/* Loading Overlay */}
                 {uploading && (
                   <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-20 backdrop-blur-sm">
@@ -192,17 +218,18 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
                     <span className="text-[9px] font-bold text-white uppercase tracking-wider">
                       Update
                     </span>
-                    <input 
-                      type="file" 
-                      className="hidden" 
+                    <input
+                      type="file"
+                      className="hidden"
                       accept="image/*"
+                      capture="environment"
                       onChange={handleImageUpload}
                     />
                   </label>
                 )}
               </div>
             </div>
-            
+
             {/* Online/Status Indicator */}
             <div className="absolute bottom-1 right-1 w-5 h-5 bg-green-500 rounded-full border-3 border-mystic-900 shadow-lg shadow-green-500/50" />
           </div>
@@ -218,7 +245,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
               <Crown className="w-5 h-5 text-yellow-500" />
             )}
           </div>
-          
+
           <p className="text-mystic-400 text-sm">
             {user?.email}
           </p>
@@ -246,88 +273,102 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
             Edit Profile
           </button>
         </div>
+
       </div>
+    </div>
+  );
 
-      {/* Crop Modal */}
-      {cropModalOpen && imageSrc && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-sm bg-slate-900 border border-white/10 rounded-3xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-white/5 flex items-center justify-between flex-shrink-0">
-              <h2 className="text-lg font-bold flex items-center gap-2">
-                <Camera className="w-5 h-5 text-accent-primary" />
-                Crop Photo
-              </h2>
-              <button
-                onClick={() => {
-                  setCropModalOpen(false);
-                  setImageSrc(null);
-                  setCrop({ x: 0, y: 0 });
-                  setZoom(1);
-                }}
-                className="p-2 hover:bg-white/5 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+  const cropModal = cropModalOpen && imageSrc && (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-2 sm:p-4 bg-black/90 backdrop-blur-sm">
+      <div className="relative w-full max-w-xs sm:max-w-sm bg-slate-900 border border-white/10 rounded-2xl sm:rounded-3xl shadow-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="p-3 sm:p-4 border-b border-white/5 flex items-center justify-between flex-shrink-0">
+          <h2 className="text-base sm:text-lg font-bold flex items-center gap-2">
+            <Camera className="w-4 h-4 sm:w-5 sm:h-5 text-accent-primary" />
+            <span className="hidden sm:inline">Crop Photo</span>
+            <span className="sm:hidden">Crop</span>
+          </h2>
+          <button
+            onClick={() => {
+              setCropModalOpen(false);
+              setImageSrc(null);
+              setCrop({ x: 0, y: 0 });
+              setZoom(1);
+            }}
+            className="p-1.5 sm:p-2 hover:bg-white/5 rounded-lg transition-colors touch-manipulation"
+          >
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+        </div>
 
-            <div className="relative flex-1 min-h-0 bg-slate-800">
-              <EasyCrop
-                image={imageSrc}
-                crop={crop}
-                zoom={zoom}
-                aspect={1}
-                cropShape="round"
-                showGrid={false}
-                onCropChange={setCrop}
-                onCropAreaChange={onCropComplete}
-                onZoomChange={setZoom}
-                classes={{
-                  containerClassName: 'rounded-none h-full',
-                  mediaClassName: 'rounded-none',
-                }}
-              />
-            </div>
+        <div className="relative flex-1 min-h-0 bg-slate-800 overflow-hidden">
+          <EasyCrop
+            image={imageSrc}
+            crop={crop}
+            zoom={zoom}
+            aspect={1}
+            cropShape="round"
+            showGrid={false}
+            onCropChange={setCrop}
+            onCropAreaChange={onCropComplete}
+            onZoomChange={setZoom}
+            classes={{
+              containerClassName: 'rounded-none h-full',
+              mediaClassName: 'rounded-none',
+            }}
+            restrictPosition={false}
+            zoomWithScroll={true}
+          />
+        </div>
 
-            <div className="p-4 border-t border-white/5 space-y-4 flex-shrink-0">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Zoom: {zoom.toFixed(1)}x</label>
-                <input
-                  type="range"
-                  min={1}
-                  max={3}
-                  step={0.1}
-                  value={zoom}
-                  onChange={(e) => setZoom(Number(e.target.value))}
-                  className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer"
-                />
-              </div>
+        <div className="p-3 sm:p-4 border-t border-white/5 space-y-3 sm:space-y-4 flex-shrink-0">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Zoom: {zoom.toFixed(1)}x
+              <span className="text-slate-500 ml-2">(pinch or scroll)</span>
+            </label>
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={0.1}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer touch-manipulation"
+            />
+          </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setCropModalOpen(false);
-                    setImageSrc(null);
-                    setCrop({ x: 0, y: 0 });
-                    setZoom(1);
-                  }}
-                  className="flex-1 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCropSave}
-                  disabled={uploading}
-                  className="flex-1 py-2.5 rounded-xl accent-gradient text-white font-bold shadow-lg shadow-accent-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                >
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                  {uploading ? 'Saving...' : 'Save'}
-                </button>
-              </div>
-            </div>
+          <div className="flex gap-2 sm:gap-3">
+            <button
+              onClick={() => {
+                setCropModalOpen(false);
+                setImageSrc(null);
+                setCrop({ x: 0, y: 0 });
+                setZoom(1);
+              }}
+              className="flex-1 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all text-xs sm:text-sm touch-manipulation"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCropSave}
+              disabled={uploading}
+              className="flex-1 py-2 sm:py-2.5 rounded-lg sm:rounded-xl accent-gradient text-white font-bold shadow-lg shadow-accent-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1 sm:gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm touch-manipulation"
+            >
+              {uploading ? <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" /> : <Check className="w-3 h-3 sm:w-4 sm:h-4" />}
+              <span className="hidden sm:inline">{uploading ? 'Saving...' : 'Save'}</span>
+              <span className="sm:hidden">{uploading ? 'Save...' : 'Save'}</span>
+            </button>
           </div>
         </div>
-      )}
+      </div>
     </div>
+  );
+
+  return (
+    <>
+      {profileCard}
+      {cropModal}
+    </>
   );
 };
 
