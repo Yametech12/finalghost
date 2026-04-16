@@ -15,15 +15,23 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:304076302876:web:2d0b30bd4affa403e40dd9"
 };
 
+// Firestore database ID for multi-database support
+const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID;
+
 // Initialize Firebase
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 // Initialize Firestore with long polling and memory cache to prevent Unexpected state errors on reload
-export const db = initializeFirestore(app, {
-  localCache: memoryLocalCache(),
-  experimentalForceLongPolling: true,
-});
+export const db = firestoreDatabaseId && firestoreDatabaseId !== firebaseConfig.projectId
+  ? initializeFirestore(app, {
+      localCache: memoryLocalCache(),
+      experimentalForceLongPolling: true,
+    }, firestoreDatabaseId)
+  : initializeFirestore(app, {
+      localCache: memoryLocalCache(),
+      experimentalForceLongPolling: true,
+    });
 
 // Explicitly ensure the network is enabled
 enableNetwork(db).catch(err => console.error("Failed to enable network:", err));

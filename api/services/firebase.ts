@@ -14,7 +14,8 @@ export function getFirebaseConfig() {
     projectId: process.env.FIREBASE_PROJECT_ID || "epimtheusproject",
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "epimtheusproject.firebasestorage.app",
     messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "304076302876",
-    appId: process.env.FIREBASE_APP_ID || "1:304076302876:web:2d0b30bd4affa403e40dd9"
+    appId: process.env.FIREBASE_APP_ID || "1:304076302876:web:2d0b30bd4affa403e40dd9",
+    firestoreDatabaseId: process.env.FIREBASE_FIRESTORE_DATABASE_ID || "epimetheus"
   };
 
   return firebaseConfig;
@@ -27,7 +28,7 @@ export function getDb() {
     throw new Error("Firebase configuration is missing. Please set up Firebase or provide environment variables.");
   }
   firebaseApp = getApps().length > 0 ? getApp() : initializeApp(config);
-  db = getFirestore(firebaseApp);
+  db = getFirestore(firebaseApp, config.firestoreDatabaseId || "(default)");
   return db;
 }
 
