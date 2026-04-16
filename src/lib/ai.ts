@@ -12,11 +12,29 @@ export const VISION_MODEL = "openai/gpt-4o-mini";
 function hasImageContent(messages: any[]): boolean {
   return messages.some((m: any) => {
     if (!m.content) return false;
-    if (typeof m.content === 'string') return m.content.includes('data:image') || m.content.includes('image/png') || m.content.includes('base64');
+    if (typeof m.content === 'string') return m.content.includes('data:image') || m.content.includes('base64');
     if (Array.isArray(m.content)) {
-      return m.content.some((c: any) => c.type === 'image_url' || c.type === 'image');
+      return m.content.some((c: any) => c.type === 'image_url' && c.image_url?.url);
     }
     return false;
+  });
+}
+
+function convertToVisionFormat(messages: any[]): any[] {
+  return messages.map((m: any) => {
+    if (!m.content || typeof m.content !== 'string') return m;
+    // Check if content contains base64 image
+    const base64Match = m.content.match(/data:image\/(\w+);base64,/);
+    if (base64Match) {
+      return {
+        ...m,
+        content: [
+          { type: 'text', text: m.content.replace(/data:image\/(\w+);base64,[\w+/=]+/, '').trim() },
+          { type: 'image_url', image_url: { url: m.content } }
+        ]
+      };
+    }
+    return m;
   });
 }
 
@@ -28,6 +46,9 @@ export async function chatCompletion(
   // Automatically use vision model when images are present
   const hasImages = hasImageContent(messages);
   const effectiveModel = hasImages ? VISION_MODEL : model;
+  
+  // Convert messages to vision format if needed
+  const processedMessages = hasImages ? convertToVisionFormat(messages) : messages;
   const modelsToTry = [effectiveModel, ...FALLBACK_MODELS];
 
   let lastError: Error | null = null;
@@ -36,7 +57,7 @@ export async function chatCompletion(
     try {
       const requestBody: any = {
         model: modelToTry,
-        messages: messages,
+        messages: processedMessages,
         temperature: options.temperature || 0.7,
         top_p: options.top_p || 1.0,
         stream: options.stream || false,
