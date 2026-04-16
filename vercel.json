@@ -1,7 +1,28 @@
 {
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "functions": {
-    "api/**/*.ts": {
-      "runtime": "@vercel/node"
+    "api/ai/chat.ts": {
+      "runtime": "nodejs20.x"
+    },
+    "api/ai/test-key.ts": {
+      "runtime": "nodejs20.x"
+    },
+    "api/ai/models.ts": {
+      "runtime": "nodejs20.x"
+    },
+    "api/ai/diagnostics.ts": {
+      "runtime": "nodejs20.x"
+    },
+    "api/auth/send-code.ts": {
+      "runtime": "nodejs20.x"
+    },
+    "api/auth/verify-code.ts": {
+      "runtime": "nodejs20.x"
+    },
+    "api/health.ts": {
+      "runtime": "nodejs20.x"
     }
   },
   "headers": [
