@@ -501,7 +501,7 @@ export default function FieldGuidePage() {
                 <h3 className="text-lg font-bold text-slate-300">The Approach</h3>
                 <div className="space-y-3">
                   {[
-                    { label: "Direct", line: "I saw you from across the room and I knew I had to come say hi. I'm [Name].", note: "Best for Justifiers/Idealists" },
+                    { label: "Denier", line: "I saw you from across the room and I knew I had to come say hi. I'm [Name].", note: "Best for Justifiers/Idealists" },
                     { label: "Situational", line: "I can't believe how crowded this place is. Do you know if the music is always this loud?", note: "Best for Deniers/Realists" },
                     { label: "Opinion", line: "My friend and I are having a debate. Do you think it's possible to be 'just friends' with an ex?", note: "Best for Testers" },
                     { label: "Observational", line: "You have this incredibly intense energy about you. Are you always plotting something?", note: "Best for Seductresses/Masterminds" },

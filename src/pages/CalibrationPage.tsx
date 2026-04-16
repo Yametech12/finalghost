@@ -107,7 +107,7 @@ const practiceScenarios = [
     id: 6,
     text: "She's wearing a leather jacket and has several piercings. She's drinking whiskey neat and challenges your opinions on everything. She seems to enjoy the friction.",
     correctType: "TJR",
-    explanation: "Rebellious/Edgy (Justifier). Challenging/Testing (Tester). Practical/Direct (Realist)."
+    explanation: "Rebellious/Edgy (Justifier). Challenging/Testing (Tester). Practical/Denier (Realist)."
   }
 ];
 

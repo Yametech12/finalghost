@@ -31,10 +31,10 @@ const ALL_QUESTIONS: Question[] = [
   },
   {
     id: 3,
-    text: "Which type is characterized as 'Testing, Direct, Introvert'?",
+    text: "Which type is characterized as 'Testing, Denier, Introvert'?",
     options: ["TDI", "TJI", "NDI", "NJI"],
     correctAnswer: 0,
-    explanation: "TDI stands for Testing, Direct, Introvert.",
+    explanation: "TDI stands for Testing, Denier, Introvert.",
     category: "Basics"
   },
   {
@@ -66,7 +66,7 @@ const ALL_QUESTIONS: Question[] = [
     text: "What is the core desire of a 'NJI' type?",
     options: ["Adventure", "Security", "Validation", "Harmony"],
     correctAnswer: 1,
-    explanation: "NJI (Nurturing, Judicious, Introvert) types often prioritize emotional security and stability.",
+    explanation: "NJI (Nurturing, Justifier, Introvert) types often prioritize emotional security and stability.",
     category: "Dynamics"
   },
   {
@@ -111,10 +111,10 @@ const ALL_QUESTIONS: Question[] = [
   },
   {
     id: 13,
-    text: "Which type is 'Testing, Judicious, Introvert'?",
+    text: "Which type is 'Testing, Justifier, Introvert'?",
     options: ["TJI", "TDI", "NJI", "NDI"],
     correctAnswer: 0,
-    explanation: "TJI stands for Testing, Judicious, Introvert.",
+    explanation: "TJI stands for Testing, Justifier, Introvert.",
     category: "Basics"
   },
   {
@@ -127,10 +127,10 @@ const ALL_QUESTIONS: Question[] = [
   },
   {
     id: 15,
-    text: "Which type is 'Nurturing, Direct, Introvert'?",
+    text: "Which type is 'Nurturing, Denier, Introvert'?",
     options: ["NDI", "NJI", "TDI", "TJI"],
     correctAnswer: 0,
-    explanation: "NDI stands for Nurturing, Direct, Introvert.",
+    explanation: "NDI stands for Nurturing, Denier, Introvert.",
     category: "Basics"
   }
 ];
