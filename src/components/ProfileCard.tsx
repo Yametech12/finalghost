@@ -251,16 +251,18 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
       {/* Crop Modal */}
       {cropModalOpen && imageSrc && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
+          <div className="relative w-full max-w-md bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
             <div className="p-6 border-b border-white/5 flex items-center justify-between">
               <h2 className="text-xl font-bold flex items-center gap-2">
                 <Camera className="w-5 h-5 text-accent-primary" />
-                Crop Image
+                Crop Profile Photo
               </h2>
               <button
                 onClick={() => {
                   setCropModalOpen(false);
                   setImageSrc(null);
+                  setCrop({ x: 0, y: 0 });
+                  setZoom(1);
                 }}
                 className="p-2 hover:bg-white/5 rounded-lg transition-colors"
               >
@@ -268,21 +270,27 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
               </button>
             </div>
 
-            <div className="relative h-64 bg-black">
+            <div className="relative h-80 bg-slate-800">
               <EasyCrop
                 image={imageSrc}
                 crop={crop}
                 zoom={zoom}
                 aspect={1}
+                cropShape="round"
+                showGrid={false}
                 onCropChange={setCrop}
                 onCropAreaChange={onCropComplete}
                 onZoomChange={setZoom}
+                classes={{
+                  containerClassName: 'rounded-none',
+                  mediaClassName: 'rounded-none',
+                }}
               />
             </div>
 
-            <div className="p-4 border-t border-white/5">
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-300 mb-2">Zoom</label>
+            <div className="p-6 border-t border-white/5 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-3">Zoom Level</label>
                 <input
                   type="range"
                   min={1}
@@ -290,8 +298,13 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
                   step={0.1}
                   value={zoom}
                   onChange={(e) => setZoom(Number(e.target.value))}
-                  className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                  className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer slider"
                 />
+                <div className="flex justify-between text-xs text-slate-500 mt-1">
+                  <span>1x</span>
+                  <span>{zoom.toFixed(1)}x</span>
+                  <span>3x</span>
+                </div>
               </div>
 
               <div className="flex gap-3">
@@ -299,6 +312,8 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
                   onClick={() => {
                     setCropModalOpen(false);
                     setImageSrc(null);
+                    setCrop({ x: 0, y: 0 });
+                    setZoom(1);
                   }}
                   className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all"
                 >
@@ -306,10 +321,11 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
                 </button>
                 <button
                   onClick={handleCropSave}
-                  className="flex-1 py-3 rounded-xl accent-gradient text-white font-bold shadow-lg shadow-accent-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  disabled={uploading}
+                  className="flex-1 py-3 rounded-xl accent-gradient text-white font-bold shadow-lg shadow-accent-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Check className="w-5 h-5" />
-                  Save
+                  {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+                  {uploading ? 'Saving...' : 'Save Photo'}
                 </button>
               </div>
             </div>
