@@ -23,6 +23,15 @@ const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID;
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
+// Debug: Check if Firebase initialized properly
+if (typeof window !== 'undefined') {
+  console.log('Firebase initialized with config:', {
+    projectId: firebaseConfig.projectId,
+    authDomain: firebaseConfig.authDomain,
+    hasApiKey: !!firebaseConfig.apiKey
+  });
+}
+
 // Initialize Firestore with long polling and memory cache to prevent Unexpected state errors on reload
 export const db = firestoreDatabaseId && firestoreDatabaseId !== firebaseConfig.projectId
   ? initializeFirestore(app, {
