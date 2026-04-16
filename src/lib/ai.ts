@@ -1,22 +1,34 @@
 // OpenRouter model configuration - using reliable models
-export const DEFAULT_MODEL = "microsoft/wizardlm-2-8x22b";
+export const DEFAULT_MODEL = "openai/gpt-4o-mini";
 // Fallback models in order of preference
 export const FALLBACK_MODELS = [
-  "microsoft/wizardlm-2-8x22b",
+  "openai/gpt-4o-mini",
+  "anthropic/claude-3.5-sonnet-latest",
   "meta-llama/llama-3.1-8b-instruct:free",
-  "anthropic/claude-3-haiku",
-  "openai/gpt-3.5-turbo",
-  "google/gemma-2-9b-it:free"
 ];
 // Vision support enabled with OpenRouter
 export const VISION_MODEL = "openai/gpt-4o-mini";
+
+function hasImageContent(messages: any[]): boolean {
+  return messages.some((m: any) => {
+    if (!m.content) return false;
+    if (typeof m.content === 'string') return m.content.includes('data:image') || m.content.includes('image/png') || m.content.includes('base64');
+    if (Array.isArray(m.content)) {
+      return m.content.some((c: any) => c.type === 'image_url' || c.type === 'image');
+    }
+    return false;
+  });
+}
 
 export async function chatCompletion(
   messages: any[],
   model: string = DEFAULT_MODEL,
   options: any = {}
 ): Promise<any> {
-  const modelsToTry = model === DEFAULT_MODEL ? [DEFAULT_MODEL, ...FALLBACK_MODELS] : [model];
+  // Automatically use vision model when images are present
+  const hasImages = hasImageContent(messages);
+  const effectiveModel = hasImages ? VISION_MODEL : model;
+  const modelsToTry = [effectiveModel, ...FALLBACK_MODELS];
 
   let lastError: Error | null = null;
 
