@@ -7,32 +7,23 @@ import { handleFirestoreError, OperationType } from "../utils/errorHandling";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCIVOidyoXfGAbmGx0CBCDqjk6KdMPDO6Q",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "project-0072b519-b9bc-4a17-885.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "project-0072b519-b9bc-4a17-885",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "project-0072b519-b9bc-4a17-885.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "489845233202",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:489845233202:web:3113c28693613ca2774e2b",
-  databaseURL: "https://project-0072b519-b9bc-4a17-885-default-rtdb.firebaseio.com"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCTXmLU6ytsh_bg8OEH7SMzIvEPxx6ytAA",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "epimtheusproject.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "epimtheusproject",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "epimtheusproject.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "304076302876",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:304076302876:web:2d0b30bd4affa403e40dd9"
 };
-
-// Firestore database ID for multi-database support
-const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID;
 
 // Initialize Firebase
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 // Initialize Firestore with long polling and memory cache to prevent Unexpected state errors on reload
-export const db = firestoreDatabaseId && firestoreDatabaseId !== firebaseConfig.projectId
-  ? initializeFirestore(app, {
-      localCache: memoryLocalCache(),
-      experimentalForceLongPolling: true,
-    }, firestoreDatabaseId)
-  : initializeFirestore(app, {
-      localCache: memoryLocalCache(),
-      experimentalForceLongPolling: true,
-    });
+export const db = initializeFirestore(app, {
+  localCache: memoryLocalCache(),
+  experimentalForceLongPolling: true,
+});
 
 // Explicitly ensure the network is enabled
 enableNetwork(db).catch(err => console.error("Failed to enable network:", err));

@@ -16,13 +16,13 @@ echo STEP 2: Authenticate with Google Cloud
 echo Run: gcloud auth login
 echo.
 echo STEP 3: Set your project (if needed)
-echo Run: gcloud config set project project-0072b519-b9bc-4a17-885
+echo Run: gcloud config set project epimtheusproject
 echo.
 echo STEP 4: Apply CORS configuration
-echo Run: gsutil cors set cors.json gs://project-0072b519-b9bc-4a17-885.firebasestorage.app
+echo Run: gsutil cors set cors.json gs://epimtheusproject.firebasestorage.app
 echo.
 echo STEP 5: Verify CORS configuration
-echo Run: gsutil cors get gs://project-0072b519-b9bc-4a17-885.firebasestorage.app
+echo Run: gsutil cors get gs://epimtheusproject.firebasestorage.app
 echo.
 echo The output should show your CORS configuration.
 echo.

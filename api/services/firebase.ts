@@ -9,13 +9,12 @@ export function getFirebaseConfig() {
   if (firebaseConfig) return firebaseConfig;
 
   firebaseConfig = {
-    apiKey: process.env.FIREBASE_API_KEY || "AIzaSyCIVOidyoXfGAbmGx0CBCDqjk6KdMPDO6Q",
-    authDomain: process.env.FIREBASE_AUTH_DOMAIN || "project-0072b519-b9bc-4a17-885.firebaseapp.com",
-    projectId: process.env.FIREBASE_PROJECT_ID || "project-0072b519-b9bc-4a17-885",
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "project-0072b519-b9bc-4a17-885.firebasestorage.app",
-    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "489845233202",
-    appId: process.env.FIREBASE_APP_ID || "1:489845233202:web:3113c28693613ca2774e2b",
-    firestoreDatabaseId: process.env.FIREBASE_FIRESTORE_DATABASE_ID || "ai-studio-8dfb031a-842c-43f3-a9a0-de3d25111682"
+    apiKey: process.env.FIREBASE_API_KEY || "AIzaSyCTXmLU6ytsh_bg8OEH7SMzIvEPxx6ytAA",
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN || "epimtheusproject.firebaseapp.com",
+    projectId: process.env.FIREBASE_PROJECT_ID || "epimtheusproject",
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "epimtheusproject.firebasestorage.app",
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "304076302876",
+    appId: process.env.FIREBASE_APP_ID || "1:304076302876:web:2d0b30bd4affa403e40dd9"
   };
 
   return firebaseConfig;
@@ -28,7 +27,7 @@ export function getDb() {
     throw new Error("Firebase configuration is missing. Please set up Firebase or provide environment variables.");
   }
   firebaseApp = getApps().length > 0 ? getApp() : initializeApp(config);
-  db = getFirestore(firebaseApp, config.firestoreDatabaseId || "(default)");
+  db = getFirestore(firebaseApp);
   return db;
 }
 

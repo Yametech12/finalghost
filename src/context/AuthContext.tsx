@@ -16,6 +16,7 @@ import {
 import { auth, googleProvider, db } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../utils/errorHandling';
+import { toast } from 'sonner';
 
 // Force prompt to select account every time for better UX
 googleProvider.setCustomParameters({
@@ -149,8 +150,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Check if email is verified for security
           if (!currentUser.emailVerified) {
             console.warn('User email not verified:', currentUser.email);
-            // Allow unverified users to continue but mark them for potential verification reminder
-            // In a future update, you could show a verification reminder banner
+            // Show a subtle notification for email verification
+            setTimeout(() => {
+              toast.info('Please verify your email address for account security', {
+                description: 'Check your inbox for a verification link from Firebase',
+                duration: 8000,
+                action: {
+                  label: 'Resend',
+                  onClick: () => sendEmailVerification(currentUser).then(() => toast.success('Verification email sent')),
+                },
+              });
+            }, 2000); // Delay to avoid overwhelming user on login
           }
 
           // User exists: Proceed to fetch Firestore data safely
@@ -174,11 +184,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             
             setUserData(data);
             
-            // Update last login time
+            // Update last login time (silently handle quota/network issues)
             try {
               await setDoc(doc(db, 'users', currentUser.uid), { lastLoginAt: new Date() }, { merge: true });
-            } catch (err) {
-              // Failed to update last login
+            } catch (err: any) {
+              const isQuotaError = err?.code === 'resource-exhausted' || (err instanceof Error && err.message.includes('quota'));
+              if (!isQuotaError && !(err instanceof Error && err.message.includes('network'))) {
+                console.warn('Failed to update last login time:', err.message);
+              }
+              // Silently ignore quota/network errors for this non-critical operation
             }
 
             if (data.photoURL) {
@@ -205,11 +219,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               await setDoc(doc(db, 'users', currentUser.uid), newUserData);
               setUserData(newUserData);
             } catch (err: any) {
-              if (err instanceof Error && (err.message.includes('offline') || err.message.includes('network'))) {
-                // Firestore offline - set user data locally
+              const isQuotaError = err?.code === 'resource-exhausted' || (err instanceof Error && (err.message.includes('quota') || err.message.includes('resource-exhausted')));
+              const isNetworkError = err instanceof Error && (err.message.includes('offline') || err.message.includes('network'));
+
+              if (isQuotaError) {
+                // Silently handle quota exceeded - use local storage
+                console.info('Firebase quota exceeded, using local data storage');
+                setUserData(newUserData);
+              } else if (isNetworkError) {
+                // Network issues - use local storage with notification
+                console.warn('Network connectivity issues, using local data');
                 setUserData(newUserData);
               } else {
-                handleFirestoreError(err, OperationType.CREATE, `users/${currentUser.uid}`);
+                // Other errors - show error but still try local storage
+                console.error('Firestore error during user creation:', err);
+                setUserData(newUserData); // Still allow login with local data
               }
             }
           }

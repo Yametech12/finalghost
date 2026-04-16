@@ -6,7 +6,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db, storage } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
-import { handleFirestoreError, OperationType } from '../utils/errorHandling';
+
 
 interface ProfileCardProps {
   onEditProfile?: () => void;
@@ -91,73 +91,90 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
               resolve(blob);
             } else {
               // Fallback: use data URL to create blob
-    let croppedBlob: Blob;
+              try {
+                const dataURL = canvas.toDataURL('image/jpeg', 0.9);
+                fetch(dataURL)
+                  .then(res => res.blob())
+                  .then(resolve)
+                  .catch(reject);
+              } catch (fallbackError) {
+                reject(new Error('Failed to create image blob'));
+              }
+            }
+          }, 'image/jpeg', 0.9);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      image.onerror = () => reject(new Error('Failed to load image'));
+    });
+  };
+
+  const handleCropSave = async () => {
+    if (!imageSrc || !croppedAreaPixels || !user) {
+      toast.error('Crop data not available');
+      return;
+    }
+
+    setCropModalOpen(false);
+    setUploading(true);
+
     try {
-      croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+      const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+      const croppedFile = new File([croppedBlob], 'profile.jpg', { type: 'image/jpeg' });
+
+      try {
+        // Try Firebase Storage first
+        const storageRef = ref(storage, `users/${user.uid}/profile.jpg`);
+        const snapshot = await uploadBytes(storageRef, croppedFile);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+
+        const userRef = doc(db, "users", user.uid);
+        await updateDoc(userRef, { photoURL: downloadURL });
+        await updateUserProfile({ photoURL: downloadURL });
+        if (updateUserData) {
+          await updateUserData({ photoURL: downloadURL });
+        }
+
+        toast.success("Profile photo updated!");
+      } catch (storageError: any) {
+        const isQuotaError = storageError?.code === 'storage/quota-exceeded' || (storageError instanceof Error && storageError.message.includes('quota'));
+        if (isQuotaError) {
+          console.info("Storage quota exceeded, using local storage for profile photo");
+        } else {
+          console.warn("Storage upload failed, trying fallback:", storageError);
+        }
+
+        // Fallback: Convert to base64 and save directly to Firestore
+        try {
+          const reader = new FileReader();
+          reader.onload = async (event) => {
+            const base64String = event.target?.result as string;
+            if (base64String) {
+              const userRef = doc(db, "users", user.uid);
+              await updateDoc(userRef, { photoURL: base64String });
+              await updateUserProfile({ photoURL: base64String });
+              if (updateUserData) {
+                await updateUserData({ photoURL: base64String });
+              }
+              toast.success("Profile photo updated! (Using local storage)");
+            }
+          };
+          reader.readAsDataURL(croppedBlob);
+        } catch (fallbackError: any) {
+          const isQuotaError = fallbackError?.code === 'resource-exhausted' || (fallbackError instanceof Error && fallbackError.message.includes('quota'));
+          if (isQuotaError) {
+            console.info("Firestore quota exceeded for photo update, photo stored locally");
+            toast.success("Profile photo updated! (Using local storage)");
+          } else {
+            console.error("Fallback upload also failed:", fallbackError);
+            toast.error("Failed to save profile photo. Please try again.");
+          }
+        }
+      }
     } catch (cropError) {
       console.error('Cropping failed:', cropError);
       toast.error('Failed to crop image. Please try again.');
-      setUploading(false);
-      return;
-    }
-    const croppedFile = new File([croppedBlob], 'profile.jpg', { type: 'image/jpeg' });
-
-    try {
-      // Try Firebase Storage first
-      const storageRef = ref(storage, `users/${user.uid}/profile.jpg`);
-      const snapshot = await uploadBytes(storageRef, croppedFile);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-
-      const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, { photoURL: downloadURL });
-      await updateUserProfile({ photoURL: downloadURL });
-      if (updateUserData) {
-        await updateUserData({ photoURL: downloadURL });
-      }
-
-      toast.success("Profile photo updated!");
-    } catch (storageError: any) {
-      console.warn("Storage upload failed, trying fallback:", storageError);
-
-      // Fallback: Convert to base64 and save directly to Firestore
-      try {
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-          const base64String = event.target?.result as string;
-          if (base64String) {
-            const userRef = doc(db, "users", user.uid);
-            await updateDoc(userRef, { photoURL: base64String });
-            await updateUserProfile({ photoURL: base64String });
-            if (updateUserData) {
-              await updateUserData({ photoURL: base64String });
-            }
-            toast.success("Profile photo updated! (Using local storage)");
-          }
-        };
-        reader.readAsDataURL(croppedBlob);
-      } catch (fallbackError: any) {
-        console.error("Fallback upload also failed:", fallbackError);
-
-        // Check for specific error types
-        if (storageError.code === 'storage/unauthorized') {
-          toast.error("Upload permission denied. Check Firebase Storage rules and CORS configuration.");
-        } else if (storageError.code === 'storage/canceled') {
-          toast.error("Upload was cancelled.");
-        } else if (storageError.code === 'storage/quota-exceeded') {
-          toast.error("Storage quota exceeded.");
-        } else if (storageError.code === 'storage/invalid-format') {
-          toast.error("Invalid file format.");
-        } else if (storageError.code === 'storage/invalid-argument') {
-          toast.error("Invalid upload request. Please try again.");
-        } else if (storageError.message?.includes('CORS') || storageError.message?.includes('preflight')) {
-          toast.error("CORS error. Run 'setup-cors.bat' and apply CORS configuration to Firebase Storage.");
-        } else if (storageError.message?.includes('network') || storageError.message?.includes('offline')) {
-          toast.error("Network error. Check your connection and try again.");
-        } else {
-          handleFirestoreError(storageError, OperationType.UPDATE, `users/${user.uid}`);
-          toast.error("Failed to upload image. Using local storage instead.");
-        }
-      }
     } finally {
       setUploading(false);
       setImageSrc(null);

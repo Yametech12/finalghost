@@ -1,9 +1,9 @@
 // Shared Firebase config for test files
 export const firebaseConfig = {
-  apiKey: "AIzaSyCIVOidyoXfGAbmGx0CBCDqjk6KdMPDO6Q",
-  authDomain: "project-0072b519-b9bc-4a17-885.firebaseapp.com",
-  projectId: "project-0072b519-b9bc-4a17-885",
-  storageBucket: "project-0072b519-b9bc-4a17-885.firebasestorage.app",
-  messagingSenderId: "489845233202",
-  appId: "1:489845233202:web:3113c28693613ca2774e2b",
+  apiKey: "AIzaSyCTXmLU6ytsh_bg8OEH7SMzIvEPxx6ytAA",
+  authDomain: "epimtheusproject.firebaseapp.com",
+  projectId: "epimtheusproject",
+  storageBucket: "epimtheusproject.firebasestorage.app",
+  messagingSenderId: "304076302876",
+  appId: "1:304076302876:web:2d0b30bd4affa403e40dd9",
 };

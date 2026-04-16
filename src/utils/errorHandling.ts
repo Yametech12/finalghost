@@ -29,8 +29,17 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorCode = (error as any)?.code;
+
+  // Handle quota errors gracefully - don't throw
+  if (errorCode === 'resource-exhausted' || errorMessage.includes('quota')) {
+    console.info('Firestore quota exceeded, operation will use local fallback');
+    return; // Don't throw for quota errors
+  }
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errorMessage,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
