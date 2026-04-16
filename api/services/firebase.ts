@@ -34,16 +34,16 @@ export function getDb() {
 
 export async function getApiKey(): Promise<string | undefined> {
   // Get API key from env or fallback to Firestore
-  if (process.env.GEMINI_API_KEY) {
-    return process.env.GEMINI_API_KEY;
+  if (process.env.OPENROUTER_API_KEY) {
+    return process.env.OPENROUTER_API_KEY;
   }
 
   try {
     const firestore = getDb();
     const docRef = doc(firestore, "private_config", "api_keys");
     const docSnap = await getDoc(docRef);
-    if (docSnap.exists() && docSnap.data()?.geminiApiKey) {
-      return docSnap.data()?.geminiApiKey;
+    if (docSnap.exists() && docSnap.data()?.openrouterApiKey) {
+      return docSnap.data()?.openrouterApiKey;
     }
   } catch (e: unknown) {
     console.warn("Could not fetch API key from Firestore:", e);
