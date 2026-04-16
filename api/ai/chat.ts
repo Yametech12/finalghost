@@ -15,63 +15,99 @@ interface ChatRequest {
   stream?: boolean;
 }
 
+const FALLBACK_MODELS = [
+  "microsoft/wizardlm-2-8x22b",
+  "meta-llama/llama-3.1-8b-instruct:free",
+  "anthropic/claude-3-haiku",
+  "openai/gpt-3.5-turbo",
+  "google/gemma-2-9b-it:free"
+];
+
 async function chatWithOpenRouter(body: ChatRequest, apiKeyVal: string, retries = 3, delay = 1000) {
   const url = API_URL;
+  const modelsToTry = body.model ? [body.model] : FALLBACK_MODELS;
 
-  const requestBody = {
-    model: body.model || "microsoft/wizardlm-2-8x22b",
-    messages: body.messages || [],
-    temperature: body.temperature || 0.7,
-    top_p: body.top_p || 1.0,
-    max_tokens: body.max_tokens || 4096,
-    stream: body.stream || false
-  };
+  let lastError: Error | null = null;
 
-  console.log('OpenRouter Request:', {
-    url,
-    model: requestBody.model,
-    messageCount: requestBody.messages?.length || 0,
-    hasApiKey: !!apiKeyVal
-  });
+  for (const modelToTry of modelsToTry) {
+    console.log(`Trying OpenRouter model: ${modelToTry}`);
 
-  const headers = {
-    'Authorization': `Bearer ${apiKeyVal}`,
-    'Content-Type': 'application/json',
-    'HTTP-Referer': process.env.OPENROUTER_REFERER || 'https://epimetheus.ai',
-    'X-Title': process.env.OPENROUTER_TITLE || 'Epimetheus'
-  };
+    const requestBody = {
+      model: modelToTry,
+      messages: body.messages || [],
+      temperature: body.temperature || 0.7,
+      top_p: body.top_p || 1.0,
+      max_tokens: body.max_tokens || 4096,
+      stream: body.stream || false
+    };
 
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(requestBody),
-      });
+    console.log('OpenRouter Request:', {
+      url,
+      model: requestBody.model,
+      messageCount: requestBody.messages?.length || 0,
+      hasApiKey: !!apiKeyVal,
+      isFallback: modelToTry !== body.model
+    });
 
-      if (response.ok) {
-        return response;
+    const headers = {
+      'Authorization': `Bearer ${apiKeyVal}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': process.env.OPENROUTER_REFERER || 'https://epimetheus.ai',
+      'X-Title': process.env.OPENROUTER_TITLE || 'Epimetheus'
+    };
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(requestBody),
+        });
+
+        if (response.ok) {
+          console.log(`Successfully using OpenRouter model: ${modelToTry}`);
+          return response;
+        }
+
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`OpenRouter API Error (${response.status}) for model ${modelToTry}:`, errorData);
+
+        // If 404 (model not found) or 400 (invalid model), try next model
+        if (response.status === 404 || response.status === 400) {
+          console.warn(`Model ${modelToTry} not available, trying next model...`);
+          lastError = new Error(`HTTP ${response.status}: ${errorData.error?.message || errorData.message || response.statusText}`);
+          break; // Break retry loop and try next model
+        }
+
+        // For rate limits, retry
+        if (response.status === 429 && attempt < retries) {
+          const wait = delay * Math.pow(2, attempt - 1);
+          console.warn(`Rate limit (429), waiting ${wait}ms before retry ${attempt}/${retries}`);
+          await new Promise(resolve => setTimeout(resolve, wait));
+          continue;
+        }
+
+        // For other errors, don't retry with this model
+        const errorMsg = errorData.error?.message || errorData.message || response.statusText || 'Unknown error';
+        lastError = new Error(`HTTP ${response.status}: ${errorMsg}`);
+        break;
+
+      } catch (error: unknown) {
+        if (attempt === retries) {
+          lastError = error as Error;
+          console.warn(`All retries failed for model ${modelToTry}:`, error);
+          break;
+        }
+        console.warn(`Attempt ${attempt} failed for model ${modelToTry}, retrying:`, error);
+        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt - 1)));
       }
-
-      const errorData = await response.json().catch(() => ({}));
-      console.error(`OpenRouter API Error (${response.status}):`, errorData);
-
-      if (response.status === 429 && attempt < retries) {
-        const wait = delay * Math.pow(2, attempt - 1);
-        console.warn(`Rate limit (429), waiting ${wait}ms before retry ${attempt}/${retries}`);
-        await new Promise(resolve => setTimeout(resolve, wait));
-        continue;
-      }
-
-      const errorMsg = errorData.error?.message || errorData.message || response.statusText || 'Unknown error';
-      throw new Error(`HTTP ${response.status}: ${errorMsg}`);
-    } catch (error: unknown) {
-      if (attempt === retries) throw error;
-      console.warn(`Attempt ${attempt} failed, retrying:`, error);
-      await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt - 1)));
     }
+
+    // If we get here, this model failed, continue to next model
   }
-  throw new Error('Max retries exceeded');
+
+  // If all models failed, throw the last error
+  throw lastError || new Error('All OpenRouter models failed');
 }
 
 export default async function handler(req: any, res: any) {
