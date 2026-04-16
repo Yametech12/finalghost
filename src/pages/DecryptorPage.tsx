@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MessageSquare, Bot, Loader2, Zap, Shield, Target, Copy, Check, Sparkles, AlertTriangle } from 'lucide-react';
 import { personalityTypes } from '../data/personalityTypes';
+import { PersonalityType } from '../types';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 import { chatCompletion } from '../lib/ai';
@@ -147,7 +148,7 @@ Keep responses concise, professional, and highly strategic. Use EPIMETHEUS termi
               </label>
               <select
                 value={typeId}
-                onChange={e => setTypeId(e.target.value)}
+                onChange={e => setTypeId(e.target.value as PersonalityType)}
                 className="w-full bg-mystic-800/50 border border-white/10 rounded-xl py-3 px-4 text-slate-200 focus:outline-none focus:border-accent-primary/50 focus:bg-mystic-800 transition-all appearance-none"
               >
                 {personalityTypes.map(pt => (

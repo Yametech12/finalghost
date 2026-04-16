@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, Bot, Loader2, Play, Square, RefreshCw, Shield, Target, Award, MessageSquare, User, Mic, MicOff, Copy, Check, AlertTriangle, Sparkles } from 'lucide-react';
+import { Send, Bot, Loader2, Play, Square, RefreshCw, Shield, Target, Award, User, Mic, MicOff, Copy, Check, AlertTriangle } from 'lucide-react';
 import { personalityTypes } from '../data/personalityTypes';
+import { PersonalityType } from '../types';
 import { cn } from '../lib/utils';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
@@ -279,7 +280,7 @@ Keep it actionable, professional, and focused on EPIMETHEUS framework principles
               </label>
               <select
                 value={typeId}
-                onChange={e => setTypeId(e.target.value)}
+                onChange={e => setTypeId(e.target.value as PersonalityType)}
                 disabled={isActive || isLoading}
                 className="w-full bg-mystic-800/50 border border-white/10 rounded-xl py-2.5 px-3 text-slate-200 focus:outline-none focus:border-accent-primary/50 focus:bg-mystic-800 transition-all text-sm disabled:opacity-50"
               >

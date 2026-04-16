@@ -150,9 +150,7 @@ export default function AdvisorPage() {
   const copyMessage = async (content: string) => {
     try {
       await navigator.clipboard.writeText(content);
-      setCopied(true);
       toast.success('Message copied to clipboard!');
-      setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       toast.error('Failed to copy to clipboard');
     }

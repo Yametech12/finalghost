@@ -133,7 +133,6 @@ export default function CalibrationPage() {
 
   const [history, setHistory] = React.useState<AnalysisHistory[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = React.useState(true);
-  const [currentAnalysisId, setCurrentAnalysisId] = React.useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const analysisId = searchParams.get('id');
 

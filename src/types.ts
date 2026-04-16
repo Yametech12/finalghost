@@ -108,3 +108,19 @@ export interface Favorite {
   title: string;
   timestamp: any;
 }
+
+export interface UserData {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  bio?: string;
+  contactInfo?: {
+    phone?: string;
+    instagram?: string;
+    twitter?: string;
+  };
+  role: 'user' | 'admin';
+  createdAt: any;
+  lastLoginAt?: any;
+}
