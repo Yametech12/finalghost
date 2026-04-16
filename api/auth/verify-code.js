@@ -1,17 +1,12 @@
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
-import { getDb } from '../services/firebase';
+import { getDb } from '../services/firebase.js';
 
-interface VerifyCodeRequest {
-  email: string;
-  code: string;
-}
-
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email, code } = req.body as VerifyCodeRequest;
+  const { email, code } = req.body;
   if (!email || !code) return res.status(400).json({ error: "Email and code are required" });
 
   try {
@@ -36,11 +31,11 @@ export default async function handler(req: any, res: any) {
     await deleteDoc(docRef);
 
     res.json({ success: true, message: "Code verified successfully" });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("Error verifying code:", error);
     res.status(500).json({
       error: "Failed to verify code",
-      details: (error as Error).message
+      details: error.message
     });
   }
 }

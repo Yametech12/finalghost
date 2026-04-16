@@ -1,7 +1,7 @@
-import { getApiKey } from '../services/firebase';
-import { AI_PROVIDER, API_URL } from '../services/ai';
+import { getApiKey } from '../services/firebase.js';
+import { AI_PROVIDER, API_URL } from '../services/ai.js';
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -49,11 +49,11 @@ export default async function handler(req: any, res: any) {
         error: `API test failed: ${response.status} - ${errorData.error?.message || response.statusText}`
       });
     }
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("OpenRouter test error:", error);
     res.status(500).json({
       configured: false,
-      error: `Test failed: ${(error as Error).message}`
+      error: `Test failed: ${error.message}`
     });
   }
 }

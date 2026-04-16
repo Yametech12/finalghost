@@ -1,19 +1,5 @@
-import { getApiKey } from '../services/firebase';
-import { AI_PROVIDER, API_URL } from '../services/ai';
-
-interface Message {
-  role: 'user' | 'assistant' | 'system';
-  content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
-}
-
-interface ChatRequest {
-  messages?: Message[];
-  model?: string;
-  temperature?: number;
-  top_p?: number;
-  max_tokens?: number;
-  stream?: boolean;
-}
+import { getApiKey } from '../services/firebase.js';
+import { AI_PROVIDER, API_URL } from '../services/ai.js';
 
 const FALLBACK_MODELS = [
   "microsoft/wizardlm-2-8x22b",
@@ -23,11 +9,11 @@ const FALLBACK_MODELS = [
   "google/gemma-2-9b-it:free"
 ];
 
-async function chatWithOpenRouter(body: ChatRequest, apiKeyVal: string, retries = 3, delay = 1000) {
+async function chatWithOpenRouter(body, apiKeyVal, retries = 3, delay = 1000) {
   const url = API_URL;
   const modelsToTry = body.model ? [body.model] : FALLBACK_MODELS;
 
-  let lastError: Error | null = null;
+  let lastError = null;
 
   for (const modelToTry of modelsToTry) {
     console.log(`Trying OpenRouter model: ${modelToTry}`);
@@ -92,9 +78,9 @@ async function chatWithOpenRouter(body: ChatRequest, apiKeyVal: string, retries 
         lastError = new Error(`HTTP ${response.status}: ${errorMsg}`);
         break;
 
-      } catch (error: unknown) {
+      } catch (error) {
         if (attempt === retries) {
-          lastError = error as Error;
+          lastError = error;
           console.warn(`All retries failed for model ${modelToTry}:`, error);
           break;
         }
@@ -110,7 +96,7 @@ async function chatWithOpenRouter(body: ChatRequest, apiKeyVal: string, retries 
   throw lastError || new Error('All OpenRouter models failed');
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -126,12 +112,12 @@ export default async function handler(req: any, res: any) {
 
     console.log("OpenRouter API key found, provider:", AI_PROVIDER);
 
-    const body: ChatRequest = req.body;
+    const body = req.body;
 
     // Image/vision support - pass through as-is (OpenRouter handles it)
-    const hasImages = Array.isArray(body.messages) && body.messages.some((m: any) => {
+    const hasImages = Array.isArray(body.messages) && body.messages.some((m) => {
       if (typeof m.content !== 'object') return false;
-      return Array.isArray(m.content) && m.content.some((c: any) => c.type === "image_url");
+      return Array.isArray(m.content) && m.content.some((c) => c.type === "image_url");
     });
 
     console.log("Vision detection:", { hasImages, messagesCount: body.messages?.length || 0 });
@@ -179,9 +165,9 @@ export default async function handler(req: any, res: any) {
       const data = await response.json();
       res.json(data);
     }
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("OpenRouter proxy error:", error);
-    const errorMsg = (error as Error).message;
+    const errorMsg = error.message;
     res.status(500).json({ error: `AI API error: ${errorMsg}` });
   }
 }

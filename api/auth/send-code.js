@@ -1,12 +1,8 @@
 import nodemailer from 'nodemailer';
-import { doc, setDoc } from 'firebase/firestore';
-import { getDb } from '../services/firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { getDb } from '../services/firebase.js';
 
-interface SendVerificationRequest {
-  email: string;
-}
-
-let transporter: nodemailer.Transporter | null = null;
+let transporter = null;
 
 function getTransporter() {
   if (transporter) return transporter;
@@ -34,12 +30,12 @@ function getTransporter() {
   return transporter;
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email } = req.body as SendVerificationRequest;
+  const { email } = req.body;
   if (!email) return res.status(400).json({ error: "Email is required" });
 
   const gmailUser = (process.env.GMAIL_USER || '').trim();
@@ -69,12 +65,12 @@ export default async function handler(req: any, res: any) {
         expiresAt,
       });
       console.log("Code stored in Firestore successfully");
-    } catch (fsError: unknown) {
+    } catch (fsError) {
       console.error("Firestore Error storing code:", fsError);
       return res.status(500).json({
         error: "Database error: Failed to store verification code.",
         diagnostic: "Firestore write failed. Check your security rules or quota.",
-        details: (fsError as Error).message
+        details: fsError.message
       });
     }
 
@@ -97,11 +93,11 @@ export default async function handler(req: any, res: any) {
     });
 
     res.json({ success: true, message: "Verification code sent successfully" });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("Error sending verification code:", error);
     res.status(500).json({
       error: "Failed to send verification code",
-      details: (error as Error).message
+      details: error.message
     });
   }
 }

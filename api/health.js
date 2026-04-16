@@ -1,4 +1,4 @@
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -9,9 +9,9 @@ export default async function handler(req: any, res: any) {
       hasFirebaseKey: !!process.env.VITE_FIREBASE_API_KEY || !!process.env.FIREBASE_API_KEY,
       hasOpenRouterKey: !!process.env.OPENROUTER_API_KEY,
       aiProvider: process.env.AI_PROVIDER || 'openrouter',
-      defaultModel: 'microsoft/wizardlm-2-8x22b',
       timestamp: new Date().toISOString(),
-      version: '1.0.0'
+      version: '1.0.0',
+      defaultModel: 'microsoft/wizardlm-2-8x22b'
     };
 
     res.json({

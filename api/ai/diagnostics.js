@@ -1,10 +1,10 @@
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const diagnostics: any = {
+    const diagnostics = {
       timestamp: new Date().toISOString(),
       environment: {
         node_env: process.env.NODE_ENV,
@@ -46,19 +46,19 @@ export default async function handler(req: any, res: any) {
         const modelsData = await modelsResponse.json();
         diagnostics.models_info = {
           total_models: modelsData.data?.length || 0,
-          sample_free_models: modelsData.data?.filter((m: any) => m.id.includes('free')).slice(0, 3) || [],
-          sample_paid_models: modelsData.data?.filter((m: any) => !m.id.includes('free')).slice(0, 3) || []
+          sample_free_models: modelsData.data?.filter((m) => m.id.includes('free')).slice(0, 3) || [],
+          sample_paid_models: modelsData.data?.filter((m) => !m.id.includes('free')).slice(0, 3) || []
         };
       }
     } catch (modelsError) {
       diagnostics.models_endpoint = {
-        error: (modelsError as Error).message
+        error: modelsError.message
       };
     }
 
     // Test API key configuration
     try {
-      const { getApiKey } = await import('../services/firebase');
+      const { getApiKey } = await import('../services/firebase.js');
       const apiKey = await getApiKey();
       diagnostics.api_key_config = {
         has_key: !!apiKey,
@@ -66,7 +66,7 @@ export default async function handler(req: any, res: any) {
         key_prefix: apiKey?.substring(0, 10) || null,
         source: process.env.OPENROUTER_API_KEY ? 'environment' : 'firestore'
       };
-    } catch (keyError: any) {
+    } catch (keyError) {
       diagnostics.api_key_config = {
         error: keyError.message
       };
@@ -75,8 +75,8 @@ export default async function handler(req: any, res: any) {
     // Test a simple chat request if API key is available
     if (diagnostics.api_key_config?.has_key) {
       try {
-        const { getApiKey } = await import('../services/firebase');
-        const { API_URL } = await import('../services/ai');
+        const { getApiKey } = await import('../services/firebase.js');
+        const { API_URL } = await import('../services/ai.js');
         const apiKey = await getApiKey();
 
         if (apiKey) {
@@ -120,7 +120,7 @@ export default async function handler(req: any, res: any) {
             diagnostics.chat_test.error = errorData;
           }
         }
-      } catch (chatError: any) {
+      } catch (chatError) {
         diagnostics.chat_test = {
           error: chatError.message
         };
@@ -128,10 +128,10 @@ export default async function handler(req: any, res: any) {
     }
 
     res.json(diagnostics);
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("Diagnostics error:", error);
     res.status(500).json({
-      error: `Diagnostics failed: ${(error as Error).message}`,
+      error: `Diagnostics failed: ${error.message}`,
       timestamp: new Date().toISOString()
     });
   }
