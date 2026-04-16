@@ -52,7 +52,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
     setCroppedAreaPixels(croppedAreaPixels);
   };
 
-  const getCroppedImg = (imageSrc: string, pixelCrop: any): Promise<Blob> => {
+  const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const image = new Image();
       image.src = imageSrc;
@@ -85,21 +85,11 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ onEditProfile }) => {
             height
           );
 
-          // Try toBlob first
           canvas.toBlob((blob) => {
             if (blob) {
               resolve(blob);
             } else {
-              // Fallback: use data URL to create blob
-              try {
-                const dataURL = canvas.toDataURL('image/jpeg', 0.9);
-                fetch(dataURL)
-                  .then(res => res.blob())
-                  .then(resolve)
-                  .catch(reject);
-              } catch (fallbackError) {
-                reject(new Error('Failed to create image blob'));
-              }
+              reject(new Error('Failed to create image blob'));
             }
           }, 'image/jpeg', 0.9);
         } catch (error) {
