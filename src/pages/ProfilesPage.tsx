@@ -345,14 +345,14 @@ export default function ProfilesPage() {
         </div>
 
         {assessments.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {[
-              { id: 'all', label: 'All', icon: Info },
-              { id: 'tester', label: 'Testers', icon: Target },
-              { id: 'investor', label: 'Investors', icon: Zap },
-              { id: 'direct', label: 'Direct', icon: Flame },
-              { id: 'judicious', label: 'Judicious', icon: Shield },
-            ].map((filter) => (
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: 'all', label: 'All Types', icon: Info },
+                { id: 'tester', label: 'Testers', icon: Target },
+                { id: 'investor', label: 'Investors', icon: Zap },
+                { id: 'direct', label: 'Deniers', icon: Flame },
+                { id: 'judicious', label: 'Justifiers', icon: Shield },
+              ].map((filter) => (
               <button
                 key={filter.id}
                 onClick={() => setAssessmentFilter(filter.id as any)}
@@ -476,8 +476,8 @@ export default function ProfilesPage() {
               { id: 'all', label: 'All Types', icon: Info },
               { id: 'tester', label: 'Testers', icon: Target },
               { id: 'investor', label: 'Investors', icon: Zap },
-              { id: 'direct', label: 'Direct', icon: Flame },
-              { id: 'judicious', label: 'Judicious', icon: Shield },
+              { id: 'direct', label: 'Deniers', icon: Flame },
+              { id: 'judicious', label: 'Justifiers', icon: Shield },
             ].map((filter) => (
               <button
                 key={filter.id}
