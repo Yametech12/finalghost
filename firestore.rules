@@ -132,13 +132,14 @@ service cloud.firestore {
     }
 
     function isValidCalibration(data) {
-      return hasOnlyAllowedFields(['userId', 'typeId', 'answers', 'timestamp']) &&
+      return hasOnlyAllowedFields(['userId', 'typeId', 'answers', 'timestamp', 'traits']) &&
              data.userId == request.auth.uid &&
              data.typeId is string && data.typeId.size() >= 3 && data.typeId.size() <= 10 &&
+             data.timestamp is timestamp &&
              (!('answers' in data) || data.answers == null || (data.answers is map && data.answers.size() <= 50 &&
                data.answers.keys().hasOnly(['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'q9', 'q10']) &&
                data.answers.values().hasOnly([1, 2, 3, 4, 5]))) &&
-             data.timestamp is timestamp;
+             (!('traits' in data) || data.traits == null || data.traits is map);
     }
 
     function isValidOracleAnalysis(data) {
