@@ -15,16 +15,68 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Simple rate limiter for AI endpoints
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT = 10; // requests per minute
+const RATE_WINDOW = 60000; // 1 minute
+
+function rateLimitMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
+  if (!req.path.startsWith('/api/ai')) {
+    return next();
+  }
+  
+  const ip = req.ip || req.headers['x-forwarded-for'] as string || 'unknown';
+  const now = Date.now();
+  const record = rateLimitStore.get(ip);
+  
+  if (!record || now > record.resetTime) {
+    rateLimitStore.set(ip, { count: 1, resetTime: now + RATE_WINDOW });
+    return next();
+  }
+  
+  if (record.count >= RATE_LIMIT) {
+    return res.status(429).json({ 
+      error: 'Rate limited', 
+      details: `Maximum ${RATE_LIMIT} requests per minute`,
+      retryAfter: Math.ceil((record.resetTime - now) / 1000)
+    });
+  }
+  
+  record.count++;
+  next();
+}
+
+app.use(rateLimitMiddleware);
+
 // CORS headers
 app.use((_req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
+  const origin = _req.headers.origin;
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000',
+    'https://epimetheus.ai',
+    'https://www.epimetheus.ai'
+  ];
+  
+  if (process.env.NODE_ENV === 'production') {
+    if (origin && allowedOrigins.includes(origin)) {
+      res.header("Access-Control-Allow-Origin", origin);
+    } else {
+      res.header("Access-Control-Allow-Origin", allowedOrigins.find(o => o.startsWith('https')) || allowedOrigins[0]);
+    }
+  } else {
+    res.header("Access-Control-Allow-Origin", "*");
+  }
+  
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");
   next();
 });
 
 // Preflight
-app.options('*', (_req, res) => {
+app.options('/', (_req, res) => {
   res.status(204).end();
 });
 
@@ -80,6 +132,37 @@ app.get("/api/ai/test-key", async (_req, res) => {
   }
 });
 
+app.get("/api/ai/credits", async (_req, res) => {
+  try {
+    const key = await getApiKey();
+    if (!key) return res.status(500).json({ error: "API key not configured" });
+    
+    const response = await fetch('https://openrouter.ai/api/v1/credits', {
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'HTTP-Referer': process.env.OPENROUTER_REFERER || 'https://epimetheus.ai',
+        'X-Title': process.env.OPENROUTER_TITLE || 'Epimetheus'
+      }
+    });
+    
+    if (!response.ok) {
+      const cloned = response.clone();
+      const text = await cloned.text();
+      console.log('Credits endpoint response:', response.status, text);
+      return res.status(response.status).json({ error: "Failed to fetch credits" });
+    }
+    
+    const data = await response.json();
+    res.json({
+      credits: data.credits,
+      usage: data.usage
+    });
+  } catch (error) {
+    console.error("Credits error:", error);
+    res.status(500).json({ error: "Failed to fetch credits" });
+  }
+});
+
 app.post("/api/ai/chat", async (req, res) => {
   try {
     const key = await getApiKey();
@@ -95,6 +178,8 @@ app.post("/api/ai/chat", async (req, res) => {
       stream: stream || false
     };
 
+    console.log('OpenRouter request:', { model: requestBody.model, messagesCount: requestBody.messages.length });
+
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
@@ -106,25 +191,80 @@ app.post("/api/ai/chat", async (req, res) => {
       body: JSON.stringify(requestBody),
     });
 
+    const status = response.status;
+    let errorData;
+    let responseText;
+    try {
+      const cloned = response.clone();
+      responseText = await cloned.text();
+      console.log('OpenRouter response status:', status, 'text:', responseText?.substring(0, 300));
+      errorData = JSON.parse(responseText);
+    } catch (e) {
+      console.error('Failed to parse response:', e, 'text was:', responseText);
+      errorData = {};
+    }
+
+    if (status === 400) {
+      return res.status(400).json({ 
+        error: "Bad request", 
+        details: errorData.error?.message || "Invalid request parameters",
+        code: "BAD_REQUEST"
+      });
+    }
+    if (status === 401) {
+      return res.status(401).json({ 
+        error: "Invalid API key", 
+        details: "Please check your OpenRouter API key",
+        code: "INVALID_KEY"
+      });
+    }
+    if (status === 402) {
+      return res.status(402).json({ 
+        error: "Insufficient credits", 
+        details: "Please add credits to your OpenRouter account",
+        code: "INSUFFICIENT_CREDITS"
+      });
+    }
+    if (status === 429) {
+      return res.status(429).json({ 
+        error: "Rate limited", 
+        details: "Too many requests. Please wait before retrying",
+        code: "RATE_LIMITED",
+        retryAfter: response.headers.get("Retry-After")
+      });
+    }
+    if (status === 502 || status === 503) {
+      return res.status(503).json({ 
+        error: "Model unavailable", 
+        details: "The AI model is temporarily unavailable. Please try again",
+        code: "MODEL_UNAVAILABLE"
+      });
+    }
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return res.status(500).json({ error: errorData.error?.message || "Request failed" });
+      return res.status(500).json({ 
+        error: errorData.error?.message || "Request failed",
+        code: "UNKNOWN_ERROR"
+      });
     }
 
     const data = await response.json();
-    res.json(data);
+    res.json({
+      ...data,
+      _debug: process.env.NODE_ENV === 'development' ? {
+        model: requestBody.model,
+        timestamp: new Date().toISOString()
+      } : undefined
+    });
   } catch (error) {
     console.error("Chat error:", error);
-    res.status(500).json({ error: "Chat request failed" });
+    const errMsg = error instanceof Error ? error.message : String(error);
+    res.status(500).json({ error: "Chat request failed", details: errMsg });
   }
 });
 
 // Static serving
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../dist')));
-  app.get('*', (_req, res) => {
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
-  });
 }
 
 // Error handling

@@ -193,6 +193,16 @@ export default function ProfilesPage() {
                   "{userData.bio}"
                 </p>
               )}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                  <div className="text-xs text-slate-500 uppercase tracking-wider">Calibrations</div>
+                  <div className="text-xl font-black text-accent-primary">{assessments.length}</div>
+                </div>
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                  <div className="text-xs text-slate-500 uppercase tracking-wider">Reports</div>
+                  <div className="text-xl font-black text-accent-secondary">{fieldReports.length}</div>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
