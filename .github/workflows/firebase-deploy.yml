@@ -27,8 +27,6 @@ jobs:
 
       - name: Set CORS on Storage
         run: gsutil cors set cors.json gs://${{ secrets.FIREBASE_BUCKET }}.appspot.com
-        env:
-          FIREBASE_BUCKET: ${{ secrets.FIREBASE_BUCKET }}
 
       - name: Deploy Firestore Rules
         run: firebase deploy --only firestore --project=${{ secrets.FIREBASE_PROJECT_ID }}
