@@ -170,13 +170,43 @@ app.post("/api/ai/chat", async (req, res) => {
 
     const { messages, model, temperature, max_tokens, stream } = req.body || {};
     
+    // Check if messages contain images
+    const hasImage = messages?.some((m: any) => {
+      if (!m.content) return false;
+      if (typeof m.content === 'string') return m.content.includes('data:image') || m.content.includes('base64');
+      if (Array.isArray(m.content)) return m.content.some((c: any) => c.type === 'image_url');
+      return false;
+    });
+    
+    // Use vision-capable model when images are present
+    const visionModel = "openai/gpt-4o-mini";
+    const effectiveModel = hasImage ? visionModel : (model || "openai/gpt-4o-mini");
+    
     const requestBody: any = {
-      model: model || "openai/gpt-4o-mini",
+      model: effectiveModel,
       messages: messages || [],
       temperature: temperature || 0.7,
       max_tokens: max_tokens || 4096,
       stream: stream || false
     };
+    
+    if (hasImage) {
+      // Convert messages to vision format
+      requestBody.messages = messages.map((m: any) => {
+        if (!m.content || typeof m.content !== 'string') return m;
+        const base64Match = m.content.match(/data:image\/(\w+);base64,/);
+        if (base64Match) {
+          return {
+            role: m.role,
+            content: [
+              { type: 'text', text: m.content.replace(/data:image\/(\w+);base64,[\w+/=]+/, '').trim() },
+              { type: 'image_url', image_url: { url: m.content } }
+            ]
+          };
+        }
+        return m;
+      });
+    }
 
     console.log('OpenRouter request:', { model: requestBody.model, messagesCount: requestBody.messages.length });
 
