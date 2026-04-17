@@ -249,7 +249,9 @@ service cloud.firestore {
     function isValidVerificationCode(data) {
       return hasOnlyAllowedFields(['code', 'expiresAt']) &&
              data.code is string && data.code.size() == 6 &&
-             data.expiresAt is number;
+             data.code.matches("^[0-9]{6}$") &&
+             data.expiresAt is number &&
+             data.expiresAt > request.time.toMillis();
     }
 
     // ===============================================================

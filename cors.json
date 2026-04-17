@@ -1,10 +1,11 @@
 [
   {
     "origin": [
-      "http://127.0.0.1:5173",
       "http://localhost:5173",
-      "https://ghostname.vercel.app",
-      "https://epimetheus.vercel.app"
+      "http://localhost:5174",
+      "http://localhost:3000",
+      "https://epimetheus.vercel.app",
+      "https://www.epimetheus.ai"
     ],
     "method": ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"],
     "maxAgeSeconds": 3600,
@@ -13,12 +14,7 @@
       "Authorization",
       "Content-Length",
       "Accept-Encoding",
-      "X-CSRF-Token",
-      "X-Firebase-Storage-Version",
-      "X-Goog-Upload-Protocol",
-      "X-Goog-Upload-Command",
-      "X-Goog-Upload-Offset",
-      "X-Goog-Upload-Size"
+      "x-goog-resumable"
     ]
   }
 ]
